@@ -11,13 +11,15 @@
 
 **Step 2:** Ensure Go is installed & configured on machine
 
-**Step 5:** Download deps: `go mod download`
+**Step 3:** Download deps: `go mod download`
 
 ## :arrow_forward: How to Run Project
 
 **Step 1:** Complete Setup instructions above
 
-**Step 2:** Run app: `go run .`
+**Step 2:** Run app: `go run . <CMD Args>`
+
+- NOTE: See `CMD Commands` section below for more details
 
 ## :rotating_light: Unit Tests
 
@@ -25,3 +27,9 @@
 
 - For test coverage, run `go test ./... -coverprofile cp.out` from the root directory
   - `go tool cover -html=cp.out` can then be run (root dir) to open detailed coverage breakdown in internet browser
+
+## :computer: CMD Commands
+
+- Signature Mode: `go run . -signatureMode -original=a.txt -signature=b.txt`
+- Delta Mode: `go run . -deltaMode -signature=a.txt -updated=b.txt -delta=c.txt`
+- Signature + Delta Mode: `go run . -signatureMode -deltaMode -original=a.txt -signature=b.txt -updated=c.txt -delta=d.txt`
