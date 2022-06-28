@@ -6,6 +6,7 @@ import (
 
 	"github.com/curtismenmuir/go-file-diff/cmd"
 	"github.com/curtismenmuir/go-file-diff/constants"
+	"github.com/curtismenmuir/go-file-diff/models"
 	"github.com/curtismenmuir/go-file-diff/utils"
 )
 
@@ -15,25 +16,25 @@ var (
 	verifyCMD = cmd.VerifyCMD
 )
 
-func getSignature(verbose bool, originalFile string, signatureFile string) error {
+func getSignature(cmd models.CMD) error {
 	return errors.New(constants.SignatureNotImplementedError)
 }
 
-func getDelta(verbose bool, signatureFile string, updatedFile string, deltaFile string) error {
+func getDelta(cmd models.CMD) error {
 	return errors.New(constants.DeltaNotImplementedError)
 }
 
 func main() {
 	// Parse CMD flags
-	verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile := parseCMD()
+	cmd := parseCMD()
 	// Verify valid CMD flags provided
-	if !verifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile) {
+	if !verifyCMD(cmd) {
 		return
 	}
 
 	// Generate Signature
-	if signatureMode {
-		err := getSignature(verbose, originalFile, signatureFile)
+	if cmd.SignatureMode {
+		err := getSignature(cmd)
 		if err != nil {
 			logger(fmt.Sprintf("Error: %s", err.Error()), true)
 			return
@@ -41,8 +42,8 @@ func main() {
 	}
 
 	// Generate Delta
-	if deltaMode {
-		err := getDelta(verbose, signatureFile, updatedFile, deltaFile)
+	if cmd.DeltaMode {
+		err := getDelta(cmd)
 		if err != nil {
 			logger(fmt.Sprintf("Error: %s", err.Error()), true)
 			return

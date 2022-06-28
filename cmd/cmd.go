@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/curtismenmuir/go-file-diff/constants"
+	"github.com/curtismenmuir/go-file-diff/models"
 	"github.com/curtismenmuir/go-file-diff/utils"
 )
 
@@ -14,7 +15,7 @@ var (
 	defineString = flag.String
 )
 
-func ParseCMD() (bool, bool, bool, string, string, string, string) {
+func ParseCMD() models.CMD {
 	// Define CMD flags
 	verbose := defineBool("v", false, "Enable extended logging")
 	signatureMode := defineBool("signatureMode", false, "Enable Signature mode")
@@ -27,37 +28,40 @@ func ParseCMD() (bool, bool, bool, string, string, string, string) {
 	// Parse CMD flags
 	flag.Parse()
 
-	// Log variables
-	logger(fmt.Sprintf("Verbose Logging: %t", *verbose), *verbose)
-	logger(fmt.Sprintf("Signature Mode: %t", *signatureMode), *verbose)
-	logger(fmt.Sprintf("Delta Mode: %t", *deltaMode), *verbose)
-	logger(fmt.Sprintf("Original File: %s", *originalFile), *verbose)
-	logger(fmt.Sprintf("Signature File: %s", *signatureFile), *verbose)
-	logger(fmt.Sprintf("Updated File: %s", *updatedFile), *verbose)
-	logger(fmt.Sprintf("Delta File: %s", *deltaFile), *verbose)
+	// Format CMD flags
+	cmd := models.CMD{
+		Verbose:       *verbose,
+		SignatureMode: *signatureMode,
+		DeltaMode:     *deltaMode,
+		OriginalFile:  *originalFile,
+		SignatureFile: *signatureFile,
+		UpdatedFile:   *updatedFile,
+		DeltaFile:     *deltaFile,
+	}
 
-	return *verbose, *signatureMode, *deltaMode, *originalFile, *signatureFile, *updatedFile, *deltaFile
+	logger(fmt.Sprintf("CMD: %+v", cmd), *verbose)
+	return cmd
 }
 
-func VerifyCMD(verbose bool, signatureMode bool, deltaMode bool, originalFile string, signatureFile string, updatedFile string, deltaFile string) bool {
+func VerifyCMD(cmd models.CMD) bool {
 	// Verify mode set
-	if !signatureMode && !deltaMode {
+	if !cmd.SignatureMode && !cmd.DeltaMode {
 		logger(constants.ModeFlagMissingError, true)
 		return false
 	}
 
 	// Verify files set for Signature mode
-	if signatureMode && (originalFile == "" || signatureFile == "") {
+	if cmd.SignatureMode && (cmd.OriginalFile == "" || cmd.SignatureFile == "") {
 		logger(constants.SignatureFlagsMissingError, true)
 		return false
 	}
 
 	// Verify files set for Delta mode
-	if deltaMode {
-		if signatureMode && (updatedFile == "" || deltaFile == "") {
+	if cmd.DeltaMode {
+		if cmd.SignatureMode && (cmd.UpdatedFile == "" || cmd.DeltaFile == "") {
 			logger(constants.SignatureDeltaFlagsMissingError, true)
 			return false
-		} else if !signatureMode && (signatureFile == "" || updatedFile == "" || deltaFile == "") {
+		} else if !cmd.SignatureMode && (cmd.SignatureFile == "" || cmd.UpdatedFile == "" || cmd.DeltaFile == "") {
 			logger(constants.DeltaFlagsMissingError, true)
 			return false
 		}

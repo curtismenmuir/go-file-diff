@@ -6,15 +6,28 @@ import (
 	"testing"
 
 	"github.com/curtismenmuir/go-file-diff/constants"
+	"github.com/curtismenmuir/go-file-diff/models"
 	"github.com/stretchr/testify/require"
 )
+
+const file string = "some-file.txt"
 
 func TestGetSignature(t *testing.T) {
 	t.Run("should throw `not implemented` error", func(t *testing.T) {
 		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
 		expectedError := errors.New(constants.SignatureNotImplementedError)
 		// Run
-		err := getSignature(false, "some-file.txt", "some-file.txt")
+		err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
 	})
@@ -23,9 +36,19 @@ func TestGetSignature(t *testing.T) {
 func TestGetDelta(t *testing.T) {
 	t.Run("should throw `not implemented` error", func(t *testing.T) {
 		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
 		expectedError := errors.New(constants.DeltaNotImplementedError)
 		// Run
-		err := getDelta(false, "some-file.txt", "some-file.txt", "some-file.txt")
+		err := getDelta(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
 	})
@@ -34,6 +57,16 @@ func TestGetDelta(t *testing.T) {
 func TestMain(t *testing.T) {
 	t.Run("should throw error when generating signature", func(t *testing.T) {
 		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
 		logged := false
 		loggedMessage := ""
 		expectedError := fmt.Sprintf("Error: %s", constants.SignatureNotImplementedError)
@@ -42,10 +75,12 @@ func TestMain(t *testing.T) {
 			logged = true
 			loggedMessage = message
 		}
-		parseCMD = func() (bool, bool, bool, string, string, string, string) {
-			return false, true, false, "some-file.txt", "some-file.txt", "some-file.txt", "some-file.txt"
+
+		parseCMD = func() models.CMD {
+			return cmd
 		}
-		verifyCMD = func(verbose bool, signatureMode bool, deltaMode bool, originalFile string, signatureFile string, updatedFile string, deltaFile string) bool {
+
+		verifyCMD = func(cmd models.CMD) bool {
 			return true
 		}
 		// Run
@@ -57,6 +92,16 @@ func TestMain(t *testing.T) {
 
 	t.Run("should throw error when generating delta", func(t *testing.T) {
 		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
 		logged := false
 		loggedMessage := ""
 		expectedError := fmt.Sprintf("Error: %s", constants.DeltaNotImplementedError)
@@ -65,10 +110,12 @@ func TestMain(t *testing.T) {
 			logged = true
 			loggedMessage = message
 		}
-		parseCMD = func() (bool, bool, bool, string, string, string, string) {
-			return false, false, true, "some-file.txt", "some-file.txt", "some-file.txt", "some-file.txt"
+
+		parseCMD = func() models.CMD {
+			return cmd
 		}
-		verifyCMD = func(verbose bool, signatureMode bool, deltaMode bool, originalFile string, signatureFile string, updatedFile string, deltaFile string) bool {
+
+		verifyCMD = func(cmd models.CMD) bool {
 			return true
 		}
 		// Run
@@ -80,15 +127,27 @@ func TestMain(t *testing.T) {
 
 	t.Run("should catch error with CMD args", func(t *testing.T) {
 		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
 		logged := false
 		// Mock
 		logger = func(message string, verbose bool) {
 			logged = true
 		}
-		parseCMD = func() (bool, bool, bool, string, string, string, string) {
-			return false, true, true, "some-file.txt", "some-file.txt", "some-file.txt", "some-file.txt"
+
+		parseCMD = func() models.CMD {
+			return cmd
 		}
-		verifyCMD = func(verbose bool, signatureMode bool, deltaMode bool, originalFile string, signatureFile string, updatedFile string, deltaFile string) bool {
+
+		verifyCMD = func(cmd models.CMD) bool {
 			return false
 		}
 		// Run

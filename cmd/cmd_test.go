@@ -3,6 +3,7 @@ package cmd
 import (
 	"testing"
 
+	"github.com/curtismenmuir/go-file-diff/models"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,185 +16,220 @@ func TestParseCMD(t *testing.T) {
 			result := true
 			return &result
 		}
+
 		defineString = func(name, value, usage string) *string {
 			result := file
 			return &result
 		}
+
 		// Run
-		verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile := ParseCMD()
+		cmd := ParseCMD()
 		// Verify
-		require.Equal(t, true, verbose)
-		require.Equal(t, true, signatureMode)
-		require.Equal(t, true, deltaMode)
-		require.Equal(t, file, originalFile)
-		require.Equal(t, file, signatureFile)
-		require.Equal(t, file, updatedFile)
-		require.Equal(t, file, deltaFile)
+		require.Equal(t, true, cmd.Verbose)
+		require.Equal(t, true, cmd.SignatureMode)
+		require.Equal(t, true, cmd.DeltaMode)
+		require.Equal(t, file, cmd.OriginalFile)
+		require.Equal(t, file, cmd.SignatureFile)
+		require.Equal(t, file, cmd.UpdatedFile)
+		require.Equal(t, file, cmd.DeltaFile)
 	})
 }
 
 func TestVerifyCMD(t *testing.T) {
 	t.Run("should return true when signature mode set with correct files", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := true
-		deltaMode := false
-		originalFile := file
-		signatureFile := file
-		updatedFile := ""
-		deltaFile := ""
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     false,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   "",
+			DeltaFile:     "",
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, true, result)
 	})
 
 	t.Run("should return true when delta mode set with correct files", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := false
-		deltaMode := true
-		originalFile := ""
-		signatureFile := file
-		updatedFile := file
-		deltaFile := file
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  "",
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, true, result)
 	})
 
 	t.Run("should return true when signature & delta modes set with correct files", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := true
-		deltaMode := true
-		originalFile := file
-		signatureFile := file
-		updatedFile := file
-		deltaFile := file
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, true, result)
 	})
 
 	t.Run("should return false when no mode set", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := false
-		deltaMode := false
-		originalFile := ""
-		signatureFile := ""
-		updatedFile := ""
-		deltaFile := ""
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     false,
+			OriginalFile:  "",
+			SignatureFile: "",
+			UpdatedFile:   "",
+			DeltaFile:     "",
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, false, result)
 	})
 
 	t.Run("should return false when signature mode set but missing original file", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := true
-		deltaMode := false
-		originalFile := ""
-		signatureFile := file
-		updatedFile := ""
-		deltaFile := ""
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     false,
+			OriginalFile:  "",
+			SignatureFile: file,
+			UpdatedFile:   "",
+			DeltaFile:     "",
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, false, result)
 	})
 
 	t.Run("should return false when signature mode set but missing signature file", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := true
-		deltaMode := false
-		originalFile := file
-		signatureFile := ""
-		updatedFile := ""
-		deltaFile := ""
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     false,
+			OriginalFile:  file,
+			SignatureFile: "",
+			UpdatedFile:   "",
+			DeltaFile:     "",
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, false, result)
 	})
 
 	t.Run("should return false when delta mode set but missing signature file", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := false
-		deltaMode := true
-		originalFile := ""
-		signatureFile := ""
-		updatedFile := file
-		deltaFile := file
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  "",
+			SignatureFile: "",
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, false, result)
 	})
 
 	t.Run("should return false when delta mode set but missing update file", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := false
-		deltaMode := true
-		originalFile := ""
-		signatureFile := file
-		updatedFile := ""
-		deltaFile := file
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  "",
+			SignatureFile: file,
+			UpdatedFile:   "",
+			DeltaFile:     file,
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, false, result)
 	})
 
 	t.Run("should return false when delta mode set but missing delta file", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := false
-		deltaMode := true
-		originalFile := ""
-		signatureFile := file
-		updatedFile := file
-		deltaFile := ""
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  "",
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     "",
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, false, result)
 	})
 
 	t.Run("should return false when signature & delta modes set but missing update file", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := true
-		deltaMode := true
-		originalFile := file
-		signatureFile := file
-		updatedFile := ""
-		deltaFile := file
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   "",
+			DeltaFile:     file,
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, false, result)
 	})
 
 	t.Run("should return false when signature & delta modes set but missing delta file", func(t *testing.T) {
 		// Setup
-		verbose := false
-		signatureMode := true
-		deltaMode := true
-		originalFile := file
-		signatureFile := file
-		updatedFile := file
-		deltaFile := ""
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     "",
+		}
+
 		// Run
-		result := VerifyCMD(verbose, signatureMode, deltaMode, originalFile, signatureFile, updatedFile, deltaFile)
+		result := VerifyCMD(cmd)
 		// Verify
 		require.Equal(t, false, result)
 	})
