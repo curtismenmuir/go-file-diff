@@ -16,10 +16,12 @@ var (
 	verifyCMD = cmd.VerifyCMD
 )
 
+// getSignature is a placeholder which returns "not implemented" error
 func getSignature(cmd models.CMD) error {
 	return errors.New(constants.SignatureNotImplementedError)
 }
 
+// getDelta is a placeholder which returns "not implemented" error
 func getDelta(cmd models.CMD) error {
 	return errors.New(constants.DeltaNotImplementedError)
 }
