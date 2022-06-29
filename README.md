@@ -2,8 +2,7 @@
 
 ## :collision: Important
 
-- This project is built with Go Version: `go1.16.15`
-- This project uses `Go Mod`
+- This project has been built using Go version: `go1.18.3`
 
 ## :arrow_up: How to Setup Project
 
