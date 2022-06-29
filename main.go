@@ -1,13 +1,54 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
 
-var log = fmt.Println
+	"github.com/curtismenmuir/go-file-diff/cmd"
+	"github.com/curtismenmuir/go-file-diff/constants"
+	"github.com/curtismenmuir/go-file-diff/models"
+	"github.com/curtismenmuir/go-file-diff/utils"
+)
 
-func Hello() string {
-	return "Hello, world!"
+var (
+	logger    = utils.Logger
+	parseCMD  = cmd.ParseCMD
+	verifyCMD = cmd.VerifyCMD
+)
+
+// getSignature is a placeholder which returns "not implemented" error
+func getSignature(cmd models.CMD) error {
+	return errors.New(constants.SignatureNotImplementedError)
+}
+
+// getDelta is a placeholder which returns "not implemented" error
+func getDelta(cmd models.CMD) error {
+	return errors.New(constants.DeltaNotImplementedError)
 }
 
 func main() {
-	log(Hello())
+	// Parse CMD flags
+	cmd := parseCMD()
+	// Verify valid CMD flags provided
+	if !verifyCMD(cmd) {
+		return
+	}
+
+	// Generate Signature
+	if cmd.SignatureMode {
+		err := getSignature(cmd)
+		if err != nil {
+			logger(fmt.Sprintf("Error: %s", err.Error()), true)
+			return
+		}
+	}
+
+	// Generate Delta
+	if cmd.DeltaMode {
+		err := getDelta(cmd)
+		if err != nil {
+			logger(fmt.Sprintf("Error: %s", err.Error()), true)
+			return
+		}
+	}
 }
