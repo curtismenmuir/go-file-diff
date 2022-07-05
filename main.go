@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/curtismenmuir/go-file-diff/cmd"
 	"github.com/curtismenmuir/go-file-diff/constants"
+	"github.com/curtismenmuir/go-file-diff/files"
 	"github.com/curtismenmuir/go-file-diff/models"
 	"github.com/curtismenmuir/go-file-diff/utils"
 )
@@ -14,10 +14,34 @@ var (
 	logger    = utils.Logger
 	parseCMD  = cmd.ParseCMD
 	verifyCMD = cmd.VerifyCMD
+	openFile  = files.OpenFile
 )
 
-// getSignature is a placeholder which returns "not implemented" error
+// getSignature is a placeholder which returns "not implemented" error when provided a valid Original file (CMD flags)
+// Function will catch and return any errors if they occur
+// Function returns `Original File does not exist` error when Original file cannot be found
+// Function returns `Original File is a folder dir` error when found a folder dir instead of Original file
 func getSignature(cmd models.CMD) error {
+	// Read Original file
+	_, err := openFile(cmd.OriginalFile)
+	if err != nil {
+		// Replace `file not exist` error with specific Original File error
+		if err.Error() == constants.FileDoesNotExistError {
+			return errors.New(constants.OriginalFileDoesNotExistError)
+		}
+
+		// Replace `file is folder dir` error with specific Original File error
+		if err.Error() == constants.SearchingForFileButFoundDirError {
+			return errors.New(constants.OriginalFileIsFolderError)
+		}
+
+		return err
+	}
+
+	// TODO Generate Signature
+
+	// TODO Write Signature to file
+
 	return errors.New(constants.SignatureNotImplementedError)
 }
 
@@ -38,7 +62,7 @@ func main() {
 	if cmd.SignatureMode {
 		err := getSignature(cmd)
 		if err != nil {
-			logger(fmt.Sprintf("Error: %s", err.Error()), true)
+			logger(err.Error(), true)
 			return
 		}
 	}
@@ -47,7 +71,7 @@ func main() {
 	if cmd.DeltaMode {
 		err := getDelta(cmd)
 		if err != nil {
-			logger(fmt.Sprintf("Error: %s", err.Error()), true)
+			logger(err.Error(), true)
 			return
 		}
 	}
