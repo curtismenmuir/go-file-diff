@@ -20,6 +20,13 @@
 
 - NOTE: See `CMD Commands` section below for more details
 
+## :cop: Linting
+
+- This project uses [golangci-lint](https://github.com/golangci/golangci-lint) for linting
+- Local installation guide can be found [here](https://golangci-lint.run/usage/install/#local-installation)
+- Quick Start guide an be found [here](https://golangci-lint.run/usage/quick-start)
+- Once linter is installed, run tool with: `golangci-lint run` 
+
 ## :rotating_light: Unit Tests
 
 - Run `go test ./...` from the root directory
