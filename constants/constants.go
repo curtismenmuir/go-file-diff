@@ -13,4 +13,8 @@ const (
 	OriginalFileDoesNotExistError      string = "Error: Original file does not exist"
 	SearchingForFileButFoundDirError   string = "Error: Searching for a file but found a folder dir"
 	OriginalFileIsFolderError          string = "Error: Original file provided is a folder dir"
+	UnableToCreateNewFolderError       string = "Error: Unable to create folder"
+	UnableToCreateOutputsFolder        string = "Error: Unable to create Outputs folder"
+	UnableToCreateSignatureFile        string = "Error: Unable to create Signature file"
+	UnableToWriteToSignatureFile       string = "Error: Unable to write to Signature file"
 )

@@ -11,10 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const file string = "some-file.txt"
+const (
+	file         string = "some-file.txt"
+	errorMessage string = "Some Error"
+)
 
 func TestGetSignature(t *testing.T) {
-	t.Run("should throw `not implemented` error when Original file exists", func(t *testing.T) {
+	t.Run("should throw `not implemented` error when Original file exists and write to Signature file succeeds", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -31,6 +34,10 @@ func TestGetSignature(t *testing.T) {
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			file := os.File{}
 			return bufio.NewReader(&file), nil
+		}
+
+		writeToFile = func(fileName string, output []byte) error {
+			return nil
 		}
 
 		// Run
@@ -57,6 +64,10 @@ func TestGetSignature(t *testing.T) {
 			return nil, errors.New(constants.FileDoesNotExistError)
 		}
 
+		writeToFile = func(fileName string, output []byte) error {
+			return nil
+		}
+
 		// Run
 		err := getSignature(cmd)
 		// Verify
@@ -81,6 +92,10 @@ func TestGetSignature(t *testing.T) {
 			return nil, errors.New(constants.SearchingForFileButFoundDirError)
 		}
 
+		writeToFile = func(fileName string, output []byte) error {
+			return nil
+		}
+
 		// Run
 		err := getSignature(cmd)
 		// Verify
@@ -99,11 +114,43 @@ func TestGetSignature(t *testing.T) {
 			DeltaFile:     file,
 		}
 
-		errorMessage := "Some Error"
 		expectedError := errors.New(errorMessage)
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			return nil, errors.New(errorMessage)
+		}
+
+		writeToFile = func(fileName string, output []byte) error {
+			return nil
+		}
+
+		// Run
+		err := getSignature(cmd)
+		// Verify
+		require.Equal(t, expectedError, err)
+	})
+
+	t.Run("should throw error when unable to write to Signature file", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		expectedError := errors.New(errorMessage)
+		// Mock
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		writeToFile = func(fileName string, output []byte) error {
+			return expectedError
 		}
 
 		// Run
@@ -167,6 +214,10 @@ func TestMain(t *testing.T) {
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			file := os.File{}
 			return bufio.NewReader(&file), nil
+		}
+
+		writeToFile = func(fileName string, output []byte) error {
+			return nil
 		}
 
 		// Run

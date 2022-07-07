@@ -11,10 +11,11 @@ import (
 )
 
 var (
-	logger    = utils.Logger
-	parseCMD  = cmd.ParseCMD
-	verifyCMD = cmd.VerifyCMD
-	openFile  = files.OpenFile
+	logger      = utils.Logger
+	parseCMD    = cmd.ParseCMD
+	verifyCMD   = cmd.VerifyCMD
+	openFile    = files.OpenFile
+	writeToFile = files.WriteToFile
 )
 
 // getSignature is a placeholder which returns "not implemented" error when provided a valid Original file (CMD flags)
@@ -39,8 +40,14 @@ func getSignature(cmd models.CMD) error {
 	}
 
 	// TODO Generate Signature
+	signature := []byte("Testing `write to file` for now.....\n!\"£$%^&*(){}:@~>?<,./;'#[]\n\nFile signature coming soon!\n")
 
-	// TODO Write Signature to file
+	// Write Signature to file
+	err = writeToFile(cmd.SignatureFile, signature)
+	if err != nil {
+		logger(err.Error(), true)
+		return err
+	}
 
 	return errors.New(constants.SignatureNotImplementedError)
 }
