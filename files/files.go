@@ -7,11 +7,9 @@ import (
 	"os"
 
 	"github.com/curtismenmuir/go-file-diff/constants"
-	"github.com/curtismenmuir/go-file-diff/utils"
 )
 
 var (
-	logger          = utils.Logger
 	open            = os.Open
 	getFileInfo     = os.Stat
 	checkNotExists  = os.IsNotExist
