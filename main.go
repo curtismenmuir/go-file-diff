@@ -7,15 +7,17 @@ import (
 	"github.com/curtismenmuir/go-file-diff/constants"
 	"github.com/curtismenmuir/go-file-diff/files"
 	"github.com/curtismenmuir/go-file-diff/models"
+	"github.com/curtismenmuir/go-file-diff/sync"
 	"github.com/curtismenmuir/go-file-diff/utils"
 )
 
 var (
-	logger      = utils.Logger
-	parseCMD    = cmd.ParseCMD
-	verifyCMD   = cmd.VerifyCMD
-	openFile    = files.OpenFile
-	writeToFile = files.WriteToFile
+	logger            = utils.Logger
+	parseCMD          = cmd.ParseCMD
+	verifyCMD         = cmd.VerifyCMD
+	openFile          = files.OpenFile
+	writeToFile       = files.WriteToFile
+	generateSignature = sync.GenerateSignature
 )
 
 // getSignature is a placeholder which returns "not implemented" error when provided a valid Original file (CMD flags)
@@ -24,7 +26,7 @@ var (
 // Function returns `Original File is a folder dir` error when found a folder dir instead of Original file
 func getSignature(cmd models.CMD) error {
 	// Read Original file
-	_, err := openFile(cmd.OriginalFile)
+	reader, err := openFile(cmd.OriginalFile)
 	if err != nil {
 		// Replace `file not exist` error with specific Original File error
 		if err.Error() == constants.FileDoesNotExistError {
@@ -39,7 +41,8 @@ func getSignature(cmd models.CMD) error {
 		return err
 	}
 
-	// TODO Generate Signature
+	// Generate Signature
+	_ = generateSignature(reader)
 	signature := []byte("Testing `write to file` for now.....\n!\"£$%^&*(){}:@~>?<,./;'#[]\n\nFile signature coming soon!\n")
 
 	// Write Signature to file

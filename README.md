@@ -23,9 +23,9 @@
 ## :cop: Linting
 
 - This project uses [golangci-lint](https://github.com/golangci/golangci-lint) for linting
-- Local installation guide can be found [here](https://golangci-lint.run/usage/install/#local-installation)
-- Quick Start guide an be found [here](https://golangci-lint.run/usage/quick-start)
 - Once linter is installed, run tool with: `golangci-lint run` 
+- [Local installation Guide](https://golangci-lint.run/usage/install/#local-installation)
+- [Quick Start Guide](https://golangci-lint.run/usage/quick-start)
 
 ## :rotating_light: Unit Tests
 

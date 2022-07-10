@@ -8,6 +8,7 @@ import (
 
 	"github.com/curtismenmuir/go-file-diff/constants"
 	"github.com/curtismenmuir/go-file-diff/models"
+	"github.com/curtismenmuir/go-file-diff/sync"
 	"github.com/stretchr/testify/require"
 )
 
@@ -34,6 +35,10 @@ func TestGetSignature(t *testing.T) {
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			file := os.File{}
 			return bufio.NewReader(&file), nil
+		}
+
+		generateSignature = func(reader sync.Reader) error {
+			return nil
 		}
 
 		writeToFile = func(fileName string, output []byte) error {
@@ -147,6 +152,10 @@ func TestGetSignature(t *testing.T) {
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			file := os.File{}
 			return bufio.NewReader(&file), nil
+		}
+
+		generateSignature = func(reader sync.Reader) error {
+			return nil
 		}
 
 		writeToFile = func(fileName string, output []byte) error {

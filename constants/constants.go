@@ -17,4 +17,5 @@ const (
 	UnableToCreateOutputsFolder        string = "Error: Unable to create Outputs folder"
 	UnableToCreateSignatureFile        string = "Error: Unable to create Signature file"
 	UnableToWriteToSignatureFile       string = "Error: Unable to write to Signature file"
+	EndOfFileError                     string = "Error: Reached EOF"
 )
