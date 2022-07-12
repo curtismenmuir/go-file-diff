@@ -37,7 +37,7 @@ func TestGetSignature(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateSignature = func(reader sync.Reader) error {
+		generateSignature = func(reader sync.Reader, verbose bool) error {
 			return nil
 		}
 
@@ -154,7 +154,7 @@ func TestGetSignature(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateSignature = func(reader sync.Reader) error {
+		generateSignature = func(reader sync.Reader, verbose bool) error {
 			return nil
 		}
 

@@ -10,9 +10,13 @@ import (
 )
 
 var (
-	errorMessage string = "Some Error"
-	testChunk    int    = 10
-	testByte     byte   = 5
+	errorMessage          string = "Some Error"
+	testChunk             int64  = 16
+	testByte              byte   = 5
+	testBuffer                   = []byte{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'}
+	testBufferHash               = int64(76935130210)
+	testBufferNextChar    byte   = 'q'
+	testBufferUpdatedHash        = int64(49921073876)
 )
 
 // Mock for Reader interface
@@ -47,7 +51,7 @@ func (r readerMock) ReadByte() (byte, error) {
 func TestGenerateSignature(t *testing.T) {
 	t.Run("should return `nil` when successfully processed all file data for Signature", func(t *testing.T) {
 		// Setup
-		reader := readerMock{isReadError: false, readSize: testChunk}
+		reader := readerMock{isReadError: false, readSize: int(testChunk)}
 		hasReadByte := false
 		// Mock
 		rollBuffer = func(reader Reader, buffer []byte) ([]byte, byte, byte, error) {
@@ -61,7 +65,7 @@ func TestGenerateSignature(t *testing.T) {
 		}
 
 		// Run
-		result := GenerateSignature(reader)
+		result := GenerateSignature(reader, false)
 		// Verify
 		require.Equal(t, nil, result)
 	})
@@ -71,7 +75,7 @@ func TestGenerateSignature(t *testing.T) {
 		expectedError := errors.New(errorMessage)
 		reader := readerMock{isReadError: true, mockError: expectedError}
 		// Run
-		result := GenerateSignature(reader)
+		result := GenerateSignature(reader, false)
 		// Verify
 		require.Equal(t, expectedError, result)
 	})
@@ -79,16 +83,61 @@ func TestGenerateSignature(t *testing.T) {
 	t.Run("should return `error` when unable to read data from file to roll buffer", func(t *testing.T) {
 		// Setup
 		expectedError := errors.New(errorMessage)
-		reader := readerMock{isReadError: false, readSize: testChunk}
+		reader := readerMock{isReadError: false, readSize: int(testChunk)}
 		// Mock
 		rollBuffer = func(reader Reader, buffer []byte) ([]byte, byte, byte, error) {
 			return []byte{}, 0, 0, expectedError
 		}
 
 		// Run
-		result := GenerateSignature(reader)
+		result := GenerateSignature(reader, false)
 		// Verify
 		require.Equal(t, expectedError, result)
+	})
+}
+
+func TestGenerateWeakHash(t *testing.T) {
+	t.Run("should return a consistent `resultHash` after hashing the provided buffer", func(t *testing.T) {
+		// Run
+		resultHash := generateWeakHash(testBuffer, testChunk)
+		// Verify
+		require.Equal(t, testBufferHash, resultHash)
+	})
+
+	t.Run("should generate a different `resultHash` for different buffers", func(t *testing.T) {
+		// Setup
+		buffer := []byte{'f', 'b', 'c', 'e', 'e', 'f', 'g', 4, 'i', 2, 'k', 'l', 'm', '£', 'o', 'p'}
+		// Run
+		resultHash := generateWeakHash(testBuffer, testChunk)
+		differentHash := generateWeakHash(buffer, testChunk)
+		// Verify
+		require.Equal(t, testBufferHash, resultHash)
+		require.NotEqual(t, differentHash, resultHash)
+	})
+
+	t.Run("should generate a different `resultHash` for hashes which have been reversed (EG byte order important)", func(t *testing.T) {
+		// Setup
+		buffer := []byte{'p', 'o', 'n', 'm', 'l', 'k', 'j', 'i', 'h', 'g', 'f', 'e', 'd', 'c', 'b', 'a'}
+		anotherBuffer := []byte{'b', 'a', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'}
+		// Run
+		resultHash := generateWeakHash(testBuffer, testChunk)
+		differentHash := generateWeakHash(buffer, testChunk)
+		anotherHash := generateWeakHash(anotherBuffer, testChunk)
+		// Verify
+		require.Equal(t, testBufferHash, resultHash)
+		require.NotEqual(t, differentHash, resultHash)
+		require.NotEqual(t, differentHash, anotherHash)
+		require.NotEqual(t, anotherHash, resultHash)
+	})
+
+	t.Run("should generate a valid `resultHash` when using max byte size (255)", func(t *testing.T) {
+		// Setup
+		buffer := []byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
+		expectedHash := int64(11415635451)
+		// Run
+		resultHash := generateWeakHash(buffer, testChunk)
+		// Verify
+		require.Equal(t, expectedHash, resultHash)
 	})
 }
 
@@ -106,13 +155,39 @@ func TestPop(t *testing.T) {
 	})
 }
 
+func TestModulo(t *testing.T) {
+	t.Run("should return `result` when calculated the remainder between 2 values (mod)", func(t *testing.T) {
+		// Setup
+		x := int64(10)
+		y := int64(4)
+		expectedResult := int64(2)
+		// Run
+		result := modulo(x, y)
+		// Verify
+		require.Equal(t, expectedResult, result)
+	})
+
+	t.Run("should implement Euclidean modulus, which differs from Go's mod operator", func(t *testing.T) {
+		// Setup
+		x := int64(-10)
+		y := int64(4)
+		expectedResult := int64(2)
+		goModResult := x % y
+		// Run
+		result := modulo(x, y)
+		// Verify
+		require.Equal(t, expectedResult, result)
+		require.NotEqual(t, goModResult, result)
+	})
+}
+
 func TestPopulateBuffer(t *testing.T) {
 	t.Run("should return `buffer, nil` when successfully populated buffer from file", func(t *testing.T) {
 		// Setup
-		reader := readerMock{isReadError: false, readSize: testChunk}
-		expectedBuffer := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+		reader := readerMock{isReadError: false, readSize: int(testChunk)}
+		expectedBuffer := []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 		// Run
-		buffer, err := populateBuffer(reader)
+		buffer, err := populateBuffer(reader, testChunk)
 		// Verify
 		require.Equal(t, expectedBuffer, buffer)
 		require.Equal(t, nil, err)
@@ -124,7 +199,7 @@ func TestPopulateBuffer(t *testing.T) {
 		reader := readerMock{isReadError: false, readSize: 0}
 		expectedBuffer := []byte{}
 		// Run
-		buffer, err := populateBuffer(reader)
+		buffer, err := populateBuffer(reader, testChunk)
 		// Verify
 		require.Equal(t, expectedBuffer, buffer)
 		require.Equal(t, expectedError, err)
@@ -136,7 +211,7 @@ func TestPopulateBuffer(t *testing.T) {
 		reader := readerMock{isReadError: true, mockError: io.EOF}
 		expectedBuffer := []byte{}
 		// Run
-		buffer, err := populateBuffer(reader)
+		buffer, err := populateBuffer(reader, testChunk)
 		// Verify
 		require.Equal(t, expectedBuffer, buffer)
 		require.Equal(t, expectedError, err)
@@ -148,7 +223,7 @@ func TestPopulateBuffer(t *testing.T) {
 		reader := readerMock{isReadError: true, mockError: expectedError}
 		expectedBuffer := []byte{}
 		// Run
-		buffer, err := populateBuffer(reader)
+		buffer, err := populateBuffer(reader, testChunk)
 		// Verify
 		require.Equal(t, expectedBuffer, buffer)
 		require.Equal(t, expectedError, err)
@@ -212,5 +287,27 @@ func TestRoll(t *testing.T) {
 		require.Equal(t, expectedByte, initialByte)
 		require.Equal(t, expectedByte, nextByte)
 		require.Equal(t, expectedError, err)
+	})
+}
+
+func TestRollWeakHash(t *testing.T) {
+	t.Run("should return a consistent `updatedHash` after rolling hash to next position", func(t *testing.T) {
+		// Run
+		result := rollWeakHash(testBufferHash, testBuffer[0], testBufferNextChar, testChunk)
+		// Verify
+		require.NotEqual(t, testBufferHash, result)
+		require.Equal(t, testBufferUpdatedHash, result)
+	})
+
+	t.Run("should return an `updatedHash` which matches generating hash with full buffer (eg rolls to correct hash)", func(t *testing.T) {
+		// Setup
+		buffer := []byte{'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', testBufferNextChar}
+		// Run
+		result := rollWeakHash(testBufferHash, testBuffer[0], testBufferNextChar, testChunk)
+		expectedResult := generateWeakHash(buffer, testChunk)
+		// Verify
+		require.NotEqual(t, testBufferHash, result)
+		require.Equal(t, testBufferUpdatedHash, result)
+		require.Equal(t, expectedResult, result)
 	})
 }

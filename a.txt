@@ -1,3 +1,1 @@
-Some Text
-Other Text
-Some Other Text
+Lorem ipsum dolor sit amet
