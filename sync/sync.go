@@ -1,6 +1,8 @@
 package sync
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -8,15 +10,17 @@ import (
 	"math/big"
 
 	"github.com/curtismenmuir/go-file-diff/constants"
+	"github.com/curtismenmuir/go-file-diff/models"
 	"github.com/curtismenmuir/go-file-diff/utils"
 )
 
 var (
-	logger           = utils.Logger
-	rollBuffer       = roll
-	chunk      int64 = 16           // 16 (bytes) is max chunk size for seed == 11
-	seed       int64 = 11           // Prime number
-	mod        int64 = 100000000009 // 10^11 + 9
+	logger                 = utils.Logger
+	initialiseBuffer       = populateBuffer
+	rollBuffer             = roll
+	chunk            int64 = 16           // 16 (bytes) is max chunk size for seed == 11
+	seed             int64 = 11           // Prime number
+	mod              int64 = 100000000009 // 10^11 + 9
 )
 
 // FileReader interface for mocking bufio.Reader
@@ -25,23 +29,28 @@ type Reader interface {
 	ReadByte() (byte, error)
 }
 
-// GenerateSignature() will create a rolling "hash" buffer and loop through file until it reaches EOF
-// NOTE: Signature generation still to come
-// Function returns `nil` when successful
-// Function returns `error` when unsuccessful
-func GenerateSignature(reader Reader, verbose bool) error {
+// GenerateSignature() will create a file Signature from a provided file reader
+// Signature will contain a `weak` rolling hash of the file in 16 byte chunks
+// Signature will also contain a strong hash of each chunk to avoid collisions when generating Delta
+// Function returns `Signature, nil` when successful
+// Function returns `emptySignature, error` when unsuccessful
+func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) {
+	signature := make([]models.Signature, 0)
 	// Create buffer based on chunk size
-	buffer, err := populateBuffer(reader, chunk)
+	buffer, err := initialiseBuffer(reader, chunk)
 	if err != nil {
-		return err
+		return []models.Signature{}, err
 	}
 
-	logger(fmt.Sprintf("Initial Buffer = %q", buffer[:]), verbose)
+	logger(fmt.Sprintf("Initial Buffer = %q", buffer[:]), true)
 	// Generate Weak hash of initial buffer
-	hash := generateWeakHash(buffer, chunk)
-	logger(fmt.Sprintf("Initial hash = %d\n", hash), verbose)
-	// TODO Generate Strong hash
-	// TODO Store values in Signature Table
+	weakHash := generateWeakHash(buffer, chunk)
+	logger(fmt.Sprintf("Initial hash = %d", weakHash), verbose)
+	// Generate Strong hash of buffer
+	strongHash := generateStrongHash(buffer, chunk)
+	logger(fmt.Sprintf("Strong hash = %s\n", strongHash), verbose)
+	// Store values in Signature
+	signature = append(signature, models.Signature{Weak: weakHash, Strong: strongHash})
 
 	// Loop until EOF
 	for {
@@ -56,20 +65,31 @@ func GenerateSignature(reader Reader, verbose bool) error {
 			}
 
 			// Handle errors
-			return err
+			return []models.Signature{}, err
 		}
 
 		logger(fmt.Sprintf("Rolled Buffer = %q", buffer[:]), verbose)
-
 		// Roll Weak hash
-		hash = rollWeakHash(hash, initialByte, nextByte, chunk)
-		logger(fmt.Sprintf("Rolled hash = %d\n", hash), verbose)
-		// TODO Generate Strong hash
-		// TODO Store values in Signature Table
+		weakHash = rollWeakHash(weakHash, initialByte, nextByte, chunk)
+		logger(fmt.Sprintf("Rolled hash = %d", weakHash), verbose)
+		// Generate Strong hash of updated buffer
+		strongHash = generateStrongHash(buffer, chunk)
+		logger(fmt.Sprintf("Strong hash = %s\n", strongHash), verbose)
+		// Store values in Signature
+		signature = append(signature, models.Signature{Weak: weakHash, Strong: strongHash})
 	}
 
-	// TODO return Signature table
-	return nil
+	// Return Signature
+	logger(fmt.Sprintf("Signature: %+v\n", signature), verbose)
+	return signature, nil
+}
+
+// generateStrongHash() will hash a provided buffer with SHA-256
+// Function will return final `hash` value encoded as a hex string
+func generateStrongHash(buffer []byte, chunkSize int64) string {
+	sha := sha256.New()
+	sha.Write(buffer)
+	return hex.EncodeToString(sha.Sum(nil))
 }
 
 // generateWeakHash() will generate a `weak` hash of a byte array based on the Rabin–Karp algorithm

@@ -18,4 +18,5 @@ const (
 	UnableToCreateSignatureFile        string = "Error: Unable to create Signature file"
 	UnableToWriteToSignatureFile       string = "Error: Unable to write to Signature file"
 	EndOfFileError                     string = "Error: Reached EOF"
+	UnableToGenerateSignature          string = "Error: Unable to generate Signature"
 )

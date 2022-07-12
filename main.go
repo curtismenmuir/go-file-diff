@@ -42,7 +42,11 @@ func getSignature(cmd models.CMD) error {
 	}
 
 	// Generate Signature
-	_ = generateSignature(reader, cmd.Verbose)
+	_, err = generateSignature(reader, cmd.Verbose)
+	if err != nil {
+		return errors.New(constants.UnableToGenerateSignature)
+	}
+
 	signature := []byte("Testing `write to file` for now.....\n!\"£$%^&*(){}:@~>?<,./;'#[]\n\nFile signature coming soon!\n")
 
 	// Write Signature to file

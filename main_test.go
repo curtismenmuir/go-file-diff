@@ -37,8 +37,8 @@ func TestGetSignature(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateSignature = func(reader sync.Reader, verbose bool) error {
-			return nil
+		generateSignature = func(reader sync.Reader, verbose bool) ([]models.Signature, error) {
+			return nil, nil
 		}
 
 		writeToFile = func(fileName string, output []byte) error {
@@ -135,6 +135,39 @@ func TestGetSignature(t *testing.T) {
 		require.Equal(t, expectedError, err)
 	})
 
+	t.Run("should throw `Unable to generate Signature` error when fails to generate Signature of Original file", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		expectedError := errors.New(constants.UnableToGenerateSignature)
+		// Mock
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		generateSignature = func(reader sync.Reader, verbose bool) ([]models.Signature, error) {
+			return nil, expectedError
+		}
+
+		writeToFile = func(fileName string, output []byte) error {
+			return nil
+		}
+
+		// Run
+		err := getSignature(cmd)
+		// Verify
+		require.Equal(t, expectedError, err)
+	})
+
 	t.Run("should throw error when unable to write to Signature file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
@@ -154,8 +187,8 @@ func TestGetSignature(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateSignature = func(reader sync.Reader, verbose bool) error {
-			return nil
+		generateSignature = func(reader sync.Reader, verbose bool) ([]models.Signature, error) {
+			return nil, nil
 		}
 
 		writeToFile = func(fileName string, output []byte) error {

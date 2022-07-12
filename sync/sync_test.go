@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/curtismenmuir/go-file-diff/constants"
+	"github.com/curtismenmuir/go-file-diff/models"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,6 +18,7 @@ var (
 	testBufferHash               = int64(76935130210)
 	testBufferNextChar    byte   = 'q'
 	testBufferUpdatedHash        = int64(49921073876)
+	testBufferStrongHash  string = "f39dac6cbaba535e2c207cd0cd8f154974223c848f727f98b3564cea569b41cf"
 )
 
 // Mock for Reader interface
@@ -49,50 +51,69 @@ func (r readerMock) ReadByte() (byte, error) {
 }
 
 func TestGenerateSignature(t *testing.T) {
-	t.Run("should return `nil` when successfully processed all file data for Signature", func(t *testing.T) {
+	t.Run("should return `Signature, nil` when successfully processed all file data for Signature", func(t *testing.T) {
 		// Setup
 		reader := readerMock{isReadError: false, readSize: int(testChunk)}
 		hasReadByte := false
+		updatedBuffer := []byte{'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', testBufferNextChar}
+		expectedSignature := []models.Signature{{Weak: 76935130210, Strong: "f39dac6cbaba535e2c207cd0cd8f154974223c848f727f98b3564cea569b41cf"}, {Weak: 16426995555, Strong: "2c9d26566889bcb66e96d74b97b14bc36cfd8c2949ab289fff2caeb0422e91b0"}}
 		// Mock
+		initialiseBuffer = func(reader Reader, chunkSize int64) ([]byte, error) {
+			return testBuffer, nil
+		}
+
 		rollBuffer = func(reader Reader, buffer []byte) ([]byte, byte, byte, error) {
 			if !hasReadByte {
 				// Flip hasReadByte to stop ReadByte loop by simulating EOF
 				hasReadByte = true
-				return []byte{2, 3, 4, 5}, 1, 5, nil
+				return updatedBuffer, 1, 5, nil
 			}
 
 			return []byte{}, 0, 0, errors.New(constants.EndOfFileError)
 		}
 
 		// Run
-		result := GenerateSignature(reader, false)
+		signature, err := GenerateSignature(reader, false)
 		// Verify
-		require.Equal(t, nil, result)
+		require.Equal(t, nil, err)
+		require.NotEqual(t, nil, signature)
+		require.Equal(t, expectedSignature, signature)
 	})
 
-	t.Run("should return `error` when unable to populate buffer from file", func(t *testing.T) {
+	t.Run("should return `emptySignature, error` when unable to populate buffer from file", func(t *testing.T) {
 		// Setup
 		expectedError := errors.New(errorMessage)
 		reader := readerMock{isReadError: true, mockError: expectedError}
+		// Mock
+		initialiseBuffer = func(reader Reader, chunkSize int64) ([]byte, error) {
+			return []byte{}, expectedError
+		}
+
 		// Run
-		result := GenerateSignature(reader, false)
+		signature, err := GenerateSignature(reader, false)
 		// Verify
-		require.Equal(t, expectedError, result)
+		require.Equal(t, expectedError, err)
+		require.Equal(t, []models.Signature{}, signature)
 	})
 
-	t.Run("should return `error` when unable to read data from file to roll buffer", func(t *testing.T) {
+	t.Run("should return `emptySignature, error` when unable to read data from file to roll buffer", func(t *testing.T) {
 		// Setup
 		expectedError := errors.New(errorMessage)
 		reader := readerMock{isReadError: false, readSize: int(testChunk)}
 		// Mock
+		initialiseBuffer = func(reader Reader, chunkSize int64) ([]byte, error) {
+			return testBuffer, nil
+		}
+
 		rollBuffer = func(reader Reader, buffer []byte) ([]byte, byte, byte, error) {
 			return []byte{}, 0, 0, expectedError
 		}
 
 		// Run
-		result := GenerateSignature(reader, false)
+		signature, err := GenerateSignature(reader, false)
 		// Verify
-		require.Equal(t, expectedError, result)
+		require.Equal(t, expectedError, err)
+		require.Equal(t, []models.Signature{}, signature)
 	})
 }
 
@@ -138,6 +159,15 @@ func TestGenerateWeakHash(t *testing.T) {
 		resultHash := generateWeakHash(buffer, testChunk)
 		// Verify
 		require.Equal(t, expectedHash, resultHash)
+	})
+}
+
+func TestGenerateStrongHash(t *testing.T) {
+	t.Run("should return SHA-256 `hash` of provided buffer as a Hex string", func(t *testing.T) {
+		// Run
+		hash := generateStrongHash(testBuffer, testChunk)
+		// Verify
+		require.Equal(t, testBufferStrongHash, hash)
 	})
 }
 
