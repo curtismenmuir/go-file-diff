@@ -11,5 +11,5 @@ func Logger(message string, verbose bool) {
 		return
 	}
 
-	log(message)
+	_, _ = log(message)
 }

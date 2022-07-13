@@ -7,31 +7,36 @@ import (
 	"github.com/curtismenmuir/go-file-diff/constants"
 	"github.com/curtismenmuir/go-file-diff/files"
 	"github.com/curtismenmuir/go-file-diff/models"
+	"github.com/curtismenmuir/go-file-diff/sync"
 	"github.com/curtismenmuir/go-file-diff/utils"
 )
 
 var (
-	logger      = utils.Logger
-	parseCMD    = cmd.ParseCMD
-	verifyCMD   = cmd.VerifyCMD
-	openFile    = files.OpenFile
-	writeToFile = files.WriteToFile
+	logger            = utils.Logger
+	parseCMD          = cmd.ParseCMD
+	verifyCMD         = cmd.VerifyCMD
+	openFile          = files.OpenFile
+	writeSigToFile    = files.WriteSignatureToFile
+	generateSignature = sync.GenerateSignature
 )
 
-// getSignature is a placeholder which returns "not implemented" error when provided a valid Original file (CMD flags)
-// Function will catch and return any errors if they occur
+// getSignature() will generate a Signature of a specified file and write the Signature output to a file
+// Function returns `nil` when successful
 // Function returns `Original File does not exist` error when Original file cannot be found
 // Function returns `Original File is a folder dir` error when found a folder dir instead of Original file
+// Function returns `Unable to generate Signature` error when unable to generate file Signature
+// Function returns `Unable to create Signature` error when unable to create Signature output file
+// Function returns `Unable to write Signature` error when unable to write Signature to output file
 func getSignature(cmd models.CMD) error {
 	// Read Original file
-	_, err := openFile(cmd.OriginalFile)
+	reader, err := openFile(cmd.OriginalFile)
 	if err != nil {
-		// Replace `file not exist` error with specific Original File error
+		// Replace generic `file not exist` error with specific Original File error
 		if err.Error() == constants.FileDoesNotExistError {
 			return errors.New(constants.OriginalFileDoesNotExistError)
 		}
 
-		// Replace `file is folder dir` error with specific Original File error
+		// Replace generic `file is folder dir` error with specific Original File error
 		if err.Error() == constants.SearchingForFileButFoundDirError {
 			return errors.New(constants.OriginalFileIsFolderError)
 		}
@@ -39,17 +44,20 @@ func getSignature(cmd models.CMD) error {
 		return err
 	}
 
-	// TODO Generate Signature
-	signature := []byte("Testing `write to file` for now.....\n!\"£$%^&*(){}:@~>?<,./;'#[]\n\nFile signature coming soon!\n")
+	// Generate Signature
+	signature, err := generateSignature(reader, cmd.Verbose)
+	if err != nil {
+		return errors.New(constants.UnableToGenerateSignature)
+	}
 
 	// Write Signature to file
-	err = writeToFile(cmd.SignatureFile, signature)
+	err = writeSigToFile(signature, cmd.SignatureFile)
 	if err != nil {
 		logger(err.Error(), true)
 		return err
 	}
 
-	return errors.New(constants.SignatureNotImplementedError)
+	return nil
 }
 
 // getDelta is a placeholder which returns "not implemented" error

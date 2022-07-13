@@ -2,22 +2,34 @@ package files
 
 import (
 	"bufio"
+	"encoding/gob"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/curtismenmuir/go-file-diff/constants"
+	"github.com/curtismenmuir/go-file-diff/models"
+	"github.com/curtismenmuir/go-file-diff/utils"
 )
 
 var (
-	open            = os.Open
-	getFileInfo     = os.Stat
-	checkNotExists  = os.IsNotExist
-	mkdir           = os.Mkdir
-	createFile      = os.Create
-	newWriter       = bufio.NewWriter
-	createNewWriter = createWriter
+	open             = os.Open
+	getFileInfo      = os.Stat
+	checkNotExists   = os.IsNotExist
+	mkdir            = os.Mkdir
+	createFile       = os.Create
+	logger           = utils.Logger
+	newWriter        = bufio.NewWriter
+	createNewWriter  = createWriter
+	createNewEncoder = createEncoder
+	newEncoder       = gob.NewEncoder
 )
+
+// Encoder interface for mocking gob.NewEncoder
+type Encoder interface {
+	Encode(e any) error
+}
 
 // Writer interface for mocking bufio.NewWriter
 type Writer interface {
@@ -26,7 +38,7 @@ type Writer interface {
 	Flush() error
 }
 
-const outputDir string = "Outputs/"
+const outputDir string = "./Outputs/"
 
 // createFolder() will attempt to create a folder based on provided folderName prop
 // Function will return `nil` when folder is created successfully
@@ -37,6 +49,12 @@ func createFolder(folderName string) error {
 	}
 
 	return nil
+}
+
+// createEncoder() will init and return a new gob file encoder
+// Returned file encoder will satisfy the `Encoder` interface
+func createEncoder(file *os.File) Encoder {
+	return newEncoder(file)
 }
 
 // createWriter() will init and return a new bufio file writer
@@ -111,6 +129,37 @@ func verifyOutputDirExists() error {
 		}
 	}
 
+	return nil
+}
+
+// WriteSignatureToFile() will create a Signature file in Outputs folder (based on provided fileName), and encode Signature before writing to file
+// Function will return `nil` when file has been created and written to successfully
+// Function will return `unable to create Sig file` error when unable to create file
+// Function will return `unable to write to Sig file` error when unable to write output to file after creation
+// Function will return `error` when unable to verify if Output folder exists
+func WriteSignatureToFile(signature []models.Signature, fileName string) error {
+	// Verify `Outputs` folder exists
+	err := verifyOutputDirExists()
+	if err != nil {
+		return err
+	}
+
+	// Create file
+	file, err := createFile(outputDir + fileName)
+	if err != nil {
+		return errors.New(constants.UnableToCreateSignatureFile)
+	}
+
+	defer file.Close()
+	// Create encoder
+	encoder := createNewEncoder(file)
+	// Encode Signature
+	err = encoder.Encode(signature)
+	if err != nil {
+		return errors.New(constants.UnableToWriteToSignatureFile)
+	}
+
+	logger(fmt.Sprintf("Signature created: %s%s", outputDir, fileName), true)
 	return nil
 }
 

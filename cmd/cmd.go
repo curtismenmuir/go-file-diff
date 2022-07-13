@@ -40,7 +40,7 @@ func ParseCMD() models.CMD {
 		DeltaFile:     *deltaFile,
 	}
 
-	logger(fmt.Sprintf("CMD: %+v", cmd), *verbose)
+	logger(fmt.Sprintf("CMD: %+v\n", cmd), *verbose)
 	return cmd
 }
 

@@ -9,3 +9,8 @@ type CMD struct {
 	UpdatedFile   string `json:"updatedFile"`
 	DeltaFile     string `json:"deltaFile"`
 }
+
+type Signature struct {
+	Weak   int64  `json:"weak"`
+	Strong string `json:"strong"`
+}
