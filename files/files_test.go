@@ -2,6 +2,7 @@ package files
 
 import (
 	"bufio"
+	"encoding/gob"
 	"errors"
 	"io"
 	"io/fs"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/curtismenmuir/go-file-diff/constants"
+	"github.com/curtismenmuir/go-file-diff/models"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,6 +19,21 @@ const (
 	errorMessage string = "Some Error"
 	testOutput   string = "Testing `write to file` for now.....\n!\"£$%^&*(){}:@~>?<,./;'#[]\n\nFile signature coming soon!\n"
 )
+
+// Mock for Encoder interface
+type encoderMock struct {
+	// Set test props
+	isError bool
+}
+
+// Overwrite encoderMock.Encode() to consider test prop
+func (encoder encoderMock) Encode(e any) error {
+	if encoder.isError {
+		return errors.New(errorMessage)
+	}
+
+	return nil
+}
 
 // Mock for fs.FileInfo interface
 type fileInfoMock struct {
@@ -75,6 +92,24 @@ func TestCreateFolder(t *testing.T) {
 		err := createFolder(fileName)
 		// Verify
 		require.Equal(t, expectedError, err)
+	})
+}
+
+func TestCreateEncoder(t *testing.T) {
+	t.Run("should return file encoder", func(t *testing.T) {
+		// Setup
+		file := os.File{}
+		writer := writerMock{}
+		encoder := gob.NewEncoder(writer)
+		// Mock
+		newEncoder = func(w io.Writer) *gob.Encoder {
+			return encoder
+		}
+
+		// Run
+		result := createEncoder(&file)
+		// Verify
+		require.Equal(t, encoder, result)
 	})
 }
 
@@ -336,6 +371,131 @@ func TestVerifyOutputDirExists(t *testing.T) {
 
 		// Run
 		result := verifyOutputDirExists()
+		// Verify
+		require.Equal(t, expectedError, result)
+	})
+}
+
+func TestWriteSignatureToFile(t *testing.T) {
+	t.Run("should return `nil` when successfully written Signature to output file", func(t *testing.T) {
+		// Setup
+		file := os.File{}
+		encoder := encoderMock{isError: false}
+		signature := []models.Signature{}
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			fileInfo := fileInfoMock{isDir: false}
+			return fileInfo, nil
+		}
+
+		createFile = func(name string) (*os.File, error) {
+			return &file, nil
+		}
+
+		createNewEncoder = func(file *os.File) Encoder {
+			return encoder
+		}
+
+		// Run
+		result := WriteSignatureToFile(signature, fileName)
+		// Verify
+		require.Equal(t, nil, result)
+	})
+
+	t.Run("should return `nil` when successfully created Outputs folder and written Signature to output file", func(t *testing.T) {
+		// Setup
+		file := os.File{}
+		encoder := encoderMock{isError: false}
+		signature := []models.Signature{}
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			return nil, errors.New(errorMessage)
+		}
+
+		checkNotExists = func(err error) bool {
+			return true
+		}
+
+		mkdir = func(name string, perm fs.FileMode) error {
+			return nil
+		}
+
+		createFile = func(name string) (*os.File, error) {
+			return &file, nil
+		}
+
+		createNewEncoder = func(file *os.File) Encoder {
+			return encoder
+		}
+
+		// Run
+		result := WriteSignatureToFile(signature, fileName)
+		// Verify
+		require.Equal(t, nil, result)
+	})
+
+	t.Run("should return `error` when unable to verify if Output dir exists", func(t *testing.T) {
+		// Setup
+		signature := []models.Signature{}
+		expectedError := errors.New(constants.UnableToCheckFileFolderExistsError)
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			return nil, errors.New(errorMessage)
+		}
+
+		checkNotExists = func(err error) bool {
+			return false
+		}
+
+		// Run
+		result := WriteSignatureToFile(signature, fileName)
+		// Verify
+		require.Equal(t, expectedError, result)
+	})
+
+	t.Run("should return `unable to create Sig file` error when unable to create file", func(t *testing.T) {
+		// Setup
+		file := os.File{}
+		signature := []models.Signature{}
+		expectedError := errors.New(constants.UnableToCreateSignatureFile)
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			fileInfo := fileInfoMock{isDir: false}
+			return fileInfo, nil
+		}
+
+		createFile = func(name string) (*os.File, error) {
+			return &file, errors.New(errorMessage)
+		}
+
+		// Run
+		result := WriteSignatureToFile(signature, fileName)
+		// Verify
+		require.Equal(t, expectedError, result)
+	})
+
+	t.Run("should return `unable to write to Sig file` error when unable to write to file", func(t *testing.T) {
+		// Setup
+		file := os.File{}
+		encoder := encoderMock{isError: true}
+		signature := []models.Signature{}
+		expectedError := errors.New(constants.UnableToWriteToSignatureFile)
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			fileInfo := fileInfoMock{isDir: false}
+			return fileInfo, nil
+		}
+
+		createFile = func(name string) (*os.File, error) {
+			return &file, nil
+		}
+
+		createNewEncoder = func(file *os.File) Encoder {
+			return encoder
+		}
+
+		// Run
+		result := WriteSignatureToFile(signature, fileName)
 		// Verify
 		require.Equal(t, expectedError, result)
 	})

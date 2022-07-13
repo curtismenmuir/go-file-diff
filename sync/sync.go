@@ -42,7 +42,7 @@ func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) 
 		return []models.Signature{}, err
 	}
 
-	logger(fmt.Sprintf("Initial Buffer = %q", buffer[:]), true)
+	logger(fmt.Sprintf("Initial Buffer = %q", buffer[:]), verbose)
 	// Generate Weak hash of initial buffer
 	weakHash := generateWeakHash(buffer, chunk)
 	logger(fmt.Sprintf("Initial hash = %d", weakHash), verbose)

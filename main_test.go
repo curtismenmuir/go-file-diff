@@ -18,7 +18,7 @@ const (
 )
 
 func TestGetSignature(t *testing.T) {
-	t.Run("should throw `not implemented` error when Original file exists and write to Signature file succeeds", func(t *testing.T) {
+	t.Run("should return `nil` when Signature generated successfully", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -30,7 +30,6 @@ func TestGetSignature(t *testing.T) {
 			DeltaFile:     file,
 		}
 
-		expectedError := errors.New(constants.SignatureNotImplementedError)
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			file := os.File{}
@@ -41,14 +40,14 @@ func TestGetSignature(t *testing.T) {
 			return nil, nil
 		}
 
-		writeToFile = func(fileName string, output []byte) error {
+		writeSigToFile = func(signature []models.Signature, fileName string) error {
 			return nil
 		}
 
 		// Run
 		err := getSignature(cmd)
 		// Verify
-		require.Equal(t, expectedError, err)
+		require.Equal(t, nil, err)
 	})
 
 	t.Run("should throw `Original File not exist` error when Original file cannot be found", func(t *testing.T) {
@@ -67,10 +66,6 @@ func TestGetSignature(t *testing.T) {
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			return nil, errors.New(constants.FileDoesNotExistError)
-		}
-
-		writeToFile = func(fileName string, output []byte) error {
-			return nil
 		}
 
 		// Run
@@ -97,10 +92,6 @@ func TestGetSignature(t *testing.T) {
 			return nil, errors.New(constants.SearchingForFileButFoundDirError)
 		}
 
-		writeToFile = func(fileName string, output []byte) error {
-			return nil
-		}
-
 		// Run
 		err := getSignature(cmd)
 		// Verify
@@ -123,10 +114,6 @@ func TestGetSignature(t *testing.T) {
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			return nil, errors.New(errorMessage)
-		}
-
-		writeToFile = func(fileName string, output []byte) error {
-			return nil
 		}
 
 		// Run
@@ -158,10 +145,6 @@ func TestGetSignature(t *testing.T) {
 			return nil, expectedError
 		}
 
-		writeToFile = func(fileName string, output []byte) error {
-			return nil
-		}
-
 		// Run
 		err := getSignature(cmd)
 		// Verify
@@ -191,7 +174,7 @@ func TestGetSignature(t *testing.T) {
 			return nil, nil
 		}
 
-		writeToFile = func(fileName string, output []byte) error {
+		writeSigToFile = func(signature []models.Signature, fileName string) error {
 			return expectedError
 		}
 
@@ -224,12 +207,53 @@ func TestGetDelta(t *testing.T) {
 }
 
 func TestMain(t *testing.T) {
-	t.Run("should throw error when generating signature", func(t *testing.T) {
+	t.Run("should not throw error when successfully generated Signature", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
 			SignatureMode: true,
-			DeltaMode:     true,
+			DeltaMode:     false,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		logged := false
+		// Mock
+		logger = func(message string, verbose bool) {
+			logged = true
+		}
+
+		parseCMD = func() models.CMD {
+			return cmd
+		}
+
+		verifyCMD = func(cmd models.CMD) bool {
+			return true
+		}
+
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		writeSigToFile = func(signature []models.Signature, fileName string) error {
+			return nil
+		}
+
+		// Run
+		main()
+		// Verify
+		require.Equal(t, false, logged)
+	})
+
+	t.Run("should throw error when unable to generate Signature", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     false,
 			OriginalFile:  file,
 			SignatureFile: file,
 			UpdatedFile:   file,
@@ -238,7 +262,7 @@ func TestMain(t *testing.T) {
 
 		logged := false
 		loggedMessage := ""
-		expectedError := constants.SignatureNotImplementedError
+		expectedError := constants.DeltaNotImplementedError
 		// Mock
 		logger = func(message string, verbose bool) {
 			logged = true
@@ -258,8 +282,8 @@ func TestMain(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		writeToFile = func(fileName string, output []byte) error {
-			return nil
+		writeSigToFile = func(signature []models.Signature, fileName string) error {
+			return errors.New(expectedError)
 		}
 
 		// Run
