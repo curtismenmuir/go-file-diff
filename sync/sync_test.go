@@ -171,20 +171,6 @@ func TestGenerateStrongHash(t *testing.T) {
 	})
 }
 
-func TestPop(t *testing.T) {
-	t.Run("should return `new byte[], initialByte` with initial byte popped from beginning of array", func(t *testing.T) {
-		// Setup
-		var expectedByte byte = 0
-		initialBuffer := []byte{expectedByte, 1, 2, 3, 4}
-		expectedBuffer := []byte{1, 2, 3, 4}
-		// Run
-		buffer, initialByte := pop(initialBuffer)
-		// Verify
-		require.Equal(t, expectedBuffer, buffer)
-		require.Equal(t, expectedByte, initialByte)
-	})
-}
-
 func TestModulo(t *testing.T) {
 	t.Run("should return `result` when calculated the remainder between 2 values (mod)", func(t *testing.T) {
 		// Setup
@@ -208,6 +194,20 @@ func TestModulo(t *testing.T) {
 		// Verify
 		require.Equal(t, expectedResult, result)
 		require.NotEqual(t, goModResult, result)
+	})
+}
+
+func TestPop(t *testing.T) {
+	t.Run("should return `new byte[], initialByte` with initial byte popped from beginning of array", func(t *testing.T) {
+		// Setup
+		var expectedByte byte = 0
+		initialBuffer := []byte{expectedByte, 1, 2, 3, 4}
+		expectedBuffer := []byte{1, 2, 3, 4}
+		// Run
+		buffer, initialByte := pop(initialBuffer)
+		// Verify
+		require.Equal(t, expectedBuffer, buffer)
+		require.Equal(t, expectedByte, initialByte)
 	})
 }
 

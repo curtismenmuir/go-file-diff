@@ -45,7 +45,7 @@ func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) 
 	logger(fmt.Sprintf("Initial Buffer = %q", buffer[:]), verbose)
 	// Generate Weak hash of initial buffer
 	weakHash := generateWeakHash(buffer, chunk)
-	logger(fmt.Sprintf("Initial hash = %d", weakHash), verbose)
+	logger(fmt.Sprintf("Weak hash = %d", weakHash), verbose)
 	// Generate Strong hash of buffer
 	strongHash := generateStrongHash(buffer, chunk)
 	logger(fmt.Sprintf("Strong hash = %s\n", strongHash), verbose)
@@ -75,17 +75,16 @@ func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) 
 		// Generate Strong hash of updated buffer
 		strongHash = generateStrongHash(buffer, chunk)
 		logger(fmt.Sprintf("Strong hash = %s\n", strongHash), verbose)
-		// Store values in Signature
+		// Add hashes to Signature
 		signature = append(signature, models.Signature{Weak: weakHash, Strong: strongHash})
 	}
 
-	// Return Signature
 	logger(fmt.Sprintf("Signature: %+v\n", signature), verbose)
 	return signature, nil
 }
 
 // generateStrongHash() will hash a provided buffer with SHA-256
-// Function will return final `hash` value encoded as a hex string
+// Function returns final `hash` value encoded as a hex string
 func generateStrongHash(buffer []byte, chunkSize int64) string {
 	sha := sha256.New()
 	sha.Write(buffer)
@@ -95,7 +94,7 @@ func generateStrongHash(buffer []byte, chunkSize int64) string {
 // generateWeakHash() will generate a `weak` hash of a byte array based on the Rabin–Karp algorithm
 // EG hash = ((array[0] * seed^n-1) + (array[1] * seed^n-2) + ... + (array[n] * seed^0)) % mod
 // Hash is classed as `weak` as there is potential for collisions
-// This function will return `hash` once complete
+// Function returns `hash`
 func generateWeakHash(buffer []byte, chunkSize int64) int64 {
 	multiplier := chunkSize - 1
 	var hash int64 = 0
@@ -113,6 +112,13 @@ func generateWeakHash(buffer []byte, chunkSize int64) int64 {
 	return hash
 }
 
+// modulo() will run a mod operation on 2 numbers and return the result
+// math/big is used over the built-in mod operator as `%` does not implement Euclidean modulus
+// Function returns `result` -> EG x % y
+func modulo(x int64, y int64) int64 {
+	return new(big.Int).Mod(big.NewInt(x), big.NewInt(y)).Int64()
+}
+
 // pop() will remove the first item from a provided buffer
 // Function returns `updatedBuffer, initialByte`
 // Note: initialByte is the item popped from buffer
@@ -124,13 +130,6 @@ func pop(buffer []byte) ([]byte, byte) {
 	// Fill slice with buffer items from position 1 (pop)
 	buf = append(buf, buffer[1:]...)
 	return buf, initialByte
-}
-
-// modulo() will run a mod operation on 2 numbers and return the result
-// math/big is used over the built-in mod operator as `%` does not implement Euclidean modulus
-// Function returns `result` -> EG x % y
-func modulo(x int64, y int64) int64 {
-	return new(big.Int).Mod(big.NewInt(x), big.NewInt(y)).Int64()
 }
 
 // populateBuffer() will create a new buffer and populate it, based on `chuck` size, from the provided file reader
@@ -170,7 +169,7 @@ func push(buffer []byte, item byte) []byte {
 // Function will return `updatedBuffer, initialByte, nextByte, nil` when successful
 // Note: initialByte = byte popped from first position
 // Note: nextByte = byte pushed onto end of buffer
-// Function will return `emptyBuffer, 0, 0, EOL` error when read EOF from file reader
+// Function will return `emptyBuffer, 0, 0, EOF_error` when file reader reaches EOF
 // Function will return `emptyBuffer, 0, 0, error` when unable to read byte from file
 func roll(reader Reader, buffer []byte) ([]byte, byte, byte, error) {
 	// Read a byte from file reader

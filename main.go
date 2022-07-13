@@ -20,7 +20,7 @@ var (
 	generateSignature = sync.GenerateSignature
 )
 
-// getSignature() will generate a Signature of a specified file and write the Signature output to a file (CMD flags)
+// getSignature() will generate a Signature of a specified file and write the Signature output to a file
 // Function returns `nil` when successful
 // Function returns `Original File does not exist` error when Original file cannot be found
 // Function returns `Original File is a folder dir` error when found a folder dir instead of Original file
