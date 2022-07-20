@@ -24,11 +24,18 @@ var (
 	createNewWriter  = createWriter
 	createNewEncoder = createEncoder
 	newEncoder       = gob.NewEncoder
+	newDecoder       = gob.NewDecoder
+	createNewDecoder = createDecoder
 )
 
 // Encoder interface for mocking gob.NewEncoder
 type Encoder interface {
 	Encode(e any) error
+}
+
+// Decoder interface for mocking gob.NewDecoder
+type Decoder interface {
+	Decode(e any) error
 }
 
 // Writer interface for mocking bufio.NewWriter
@@ -49,6 +56,12 @@ func createFolder(folderName string) error {
 	}
 
 	return nil
+}
+
+// createDecoder() will init and return a new gob file decoder
+// Returned file decoder will satisfy the `Decoder` interface
+func createDecoder(file *os.File) Decoder {
+	return newDecoder(file)
 }
 
 // createEncoder() will init and return a new gob file encoder
@@ -111,6 +124,41 @@ func OpenFile(fileName string) (*bufio.Reader, error) {
 	return bufio.NewReader(file), nil
 }
 
+// OpenSignature() will attempt to open a local file and decode a Signature from the file
+// Function will return `Signature, nil` when successfully retrieve a Signature from file
+// Function will return `emptySignature, error` when unable to check existence of Signature file
+// Function will return `emptySignature, SignatureFileDoesNotExistError` when Signature file not found
+// Function will return `emptySignature, UnableToOpenSignatureFile` when unable to open Signature file
+// Function will return `emptySignature, UnableToDecodeSignatureFromFile` when unable to decode Signature from file (EG invalid signature file)
+func OpenSignature(fileName string, verbose bool) ([]models.Signature, error) {
+	signature := []models.Signature{}
+	// Check if Signature file exists
+	exists, err := doesExist(fileName, true)
+	if err != nil {
+		return signature, err
+	} else if !exists {
+		return signature, errors.New(constants.SignatureFileDoesNotExistError)
+	}
+
+	// Open Signature file
+	file, err := open(fileName)
+	if err != nil {
+		return signature, errors.New(constants.UnableToOpenSignatureFile)
+	}
+
+	defer file.Close()
+	// Create new file decoder
+	decoder := createNewDecoder(file)
+	// Decode file to Signature struct
+	err = decoder.Decode(&signature)
+	if err != nil {
+		return signature, errors.New(constants.UnableToDecodeSignatureFromFile)
+	}
+
+	logger(fmt.Sprintf("File Signature: %+v\n", signature), verbose)
+	return signature, nil
+}
+
 // verifyOutputDirExists() will check for the existence of an `Outputs/` folder and will create if not exists
 // Function will return `nil` when folder already exists
 // Function will return `nil` when folder has been created successfully
@@ -159,7 +207,7 @@ func WriteSignatureToFile(signature []models.Signature, fileName string) error {
 		return errors.New(constants.UnableToWriteToSignatureFile)
 	}
 
-	logger(fmt.Sprintf("Signature created: %s%s", outputDir, fileName), true)
+	logger(fmt.Sprintf("Signature file created: %s%s\n", outputDir, fileName), true)
 	return nil
 }
 

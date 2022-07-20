@@ -12,13 +12,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	file         string = "some-file.txt"
-	errorMessage string = "Some Error"
+var (
+	file          string             = "some-file.txt"
+	errorMessage  string             = "Some Error"
+	testSignature []models.Signature = []models.Signature{{Weak: 123, Strong: "some-hex"}}
 )
 
 func TestGetSignature(t *testing.T) {
-	t.Run("should return `nil` when Signature generated successfully", func(t *testing.T) {
+	t.Run("should return `Signature, nil` when Signature generated successfully", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -37,7 +38,7 @@ func TestGetSignature(t *testing.T) {
 		}
 
 		generateSignature = func(reader sync.Reader, verbose bool) ([]models.Signature, error) {
-			return nil, nil
+			return testSignature, nil
 		}
 
 		writeSigToFile = func(signature []models.Signature, fileName string) error {
@@ -45,12 +46,13 @@ func TestGetSignature(t *testing.T) {
 		}
 
 		// Run
-		err := getSignature(cmd)
+		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, nil, err)
+		require.Equal(t, testSignature, signature)
 	})
 
-	t.Run("should throw `Original File not exist` error when Original file cannot be found", func(t *testing.T) {
+	t.Run("should return `EmptySignature, OriginalFileNotExistError` when Original file cannot be found", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -69,12 +71,13 @@ func TestGetSignature(t *testing.T) {
 		}
 
 		// Run
-		err := getSignature(cmd)
+		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
+		require.Equal(t, []models.Signature{}, signature)
 	})
 
-	t.Run("should throw `Original File is folder dir` error when user provides a folder dir instead of Original file", func(t *testing.T) {
+	t.Run("should return `EmptySignature, OriginalFileIsFolderError` when user provides a folder dir instead of Original file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -93,12 +96,13 @@ func TestGetSignature(t *testing.T) {
 		}
 
 		// Run
-		err := getSignature(cmd)
+		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
+		require.Equal(t, []models.Signature{}, signature)
 	})
 
-	t.Run("should throw error when unable to open Original file", func(t *testing.T) {
+	t.Run("should return `EmptySignature, Error` when unable to open Original file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -117,12 +121,13 @@ func TestGetSignature(t *testing.T) {
 		}
 
 		// Run
-		err := getSignature(cmd)
+		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
+		require.Equal(t, []models.Signature{}, signature)
 	})
 
-	t.Run("should throw `Unable to generate Signature` error when fails to generate Signature of Original file", func(t *testing.T) {
+	t.Run("should return `EmptySignature, UnableToGenerateSignatureError` when fails to generate Signature of Original file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -146,12 +151,13 @@ func TestGetSignature(t *testing.T) {
 		}
 
 		// Run
-		err := getSignature(cmd)
+		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
+		require.Equal(t, []models.Signature{}, signature)
 	})
 
-	t.Run("should throw error when unable to write to Signature file", func(t *testing.T) {
+	t.Run("should return `EmptySignature, UnableToWriteSignatureError` when unable to write to Signature file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -163,7 +169,7 @@ func TestGetSignature(t *testing.T) {
 			DeltaFile:     file,
 		}
 
-		expectedError := errors.New(errorMessage)
+		expectedError := errors.New(constants.UnableToWriteToSignatureFile)
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			file := os.File{}
@@ -175,13 +181,14 @@ func TestGetSignature(t *testing.T) {
 		}
 
 		writeSigToFile = func(signature []models.Signature, fileName string) error {
-			return expectedError
+			return errors.New(errorMessage)
 		}
 
 		// Run
-		err := getSignature(cmd)
+		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
+		require.Equal(t, []models.Signature{}, signature)
 	})
 }
 
@@ -190,7 +197,7 @@ func TestGetDelta(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
-			SignatureMode: true,
+			SignatureMode: false,
 			DeltaMode:     true,
 			OriginalFile:  file,
 			SignatureFile: file,
@@ -200,7 +207,7 @@ func TestGetDelta(t *testing.T) {
 
 		expectedError := errors.New(constants.DeltaNotImplementedError)
 		// Run
-		err := getDelta(cmd)
+		err := getDelta(cmd, testSignature)
 		// Verify
 		require.Equal(t, expectedError, err)
 	})
@@ -262,7 +269,7 @@ func TestMain(t *testing.T) {
 
 		logged := false
 		loggedMessage := ""
-		expectedError := constants.DeltaNotImplementedError
+		expectedError := constants.UnableToWriteToSignatureFile
 		// Mock
 		logger = func(message string, verbose bool) {
 			logged = true
@@ -283,7 +290,7 @@ func TestMain(t *testing.T) {
 		}
 
 		writeSigToFile = func(signature []models.Signature, fileName string) error {
-			return errors.New(expectedError)
+			return errors.New(errorMessage)
 		}
 
 		// Run
@@ -293,7 +300,7 @@ func TestMain(t *testing.T) {
 		require.Equal(t, expectedError, loggedMessage)
 	})
 
-	t.Run("should throw error when generating delta", func(t *testing.T) {
+	t.Run("should throw error when generating delta after opening Signature from file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -320,6 +327,95 @@ func TestMain(t *testing.T) {
 
 		verifyCMD = func(cmd models.CMD) bool {
 			return true
+		}
+
+		openSignature = func(fileName string, verbose bool) ([]models.Signature, error) {
+			return testSignature, nil
+		}
+
+		// Run
+		main()
+		// Verify
+		require.Equal(t, true, logged)
+		require.Equal(t, expectedError, loggedMessage)
+	})
+
+	t.Run("should throw error when generating delta after generating Signature", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		logged := false
+		loggedMessage := ""
+		expectedError := constants.DeltaNotImplementedError
+		// Mock
+		logger = func(message string, verbose bool) {
+			logged = true
+			loggedMessage = message
+		}
+
+		parseCMD = func() models.CMD {
+			return cmd
+		}
+
+		verifyCMD = func(cmd models.CMD) bool {
+			return true
+		}
+
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		writeSigToFile = func(signature []models.Signature, fileName string) error {
+			return nil
+		}
+
+		// Run
+		main()
+		// Verify
+		require.Equal(t, true, logged)
+		require.Equal(t, expectedError, loggedMessage)
+	})
+
+	t.Run("should throw error when generating delta and unable to open Signature file", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		logged := false
+		loggedMessage := ""
+		expectedError := constants.UnableToOpenSignatureFile
+		// Mock
+		logger = func(message string, verbose bool) {
+			logged = true
+			loggedMessage = message
+		}
+
+		parseCMD = func() models.CMD {
+			return cmd
+		}
+
+		verifyCMD = func(cmd models.CMD) bool {
+			return true
+		}
+
+		openSignature = func(fileName string, verbose bool) ([]models.Signature, error) {
+			return nil, errors.New(expectedError)
 		}
 
 		// Run
