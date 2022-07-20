@@ -23,22 +23,22 @@ var (
 	mod              int64 = 100000000009 // 10^11 + 9
 )
 
-// FileReader interface for mocking bufio.Reader
+// FileReader interface for mocking bufio.Reader.
 type Reader interface {
 	Read(p []byte) (int, error)
 	ReadByte() (byte, error)
 }
 
-// GenerateDelta() is a placeholder and returns `UnableToGenerateDelta` error
+// GenerateDelta() is a placeholder and returns `UnableToGenerateDelta` error.
 func GenerateDelta(reader Reader, signature []models.Signature, verbose bool) error {
 	return errors.New(constants.UnableToGenerateDeltaError)
 }
 
-// GenerateSignature() will create a file Signature from a provided file reader
-// Signature will contain a `weak` rolling hash of the file in 16 byte chunks
-// Signature will also contain a strong hash of each chunk to avoid collisions when generating Delta
-// Function returns `Signature, nil` when successful
-// Function returns `emptySignature, error` when unsuccessful
+// GenerateSignature() will create a file Signature from a provided file reader.
+// Signature will contain a `weak` rolling hash of the file in 16 byte chunks.
+// Signature will also contain a strong hash of each chunk to avoid collisions when generating Delta.
+// Function returns `Signature, nil` when successful.
+// Function returns `emptySignature, error` when unsuccessful.
 func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) {
 	signature := make([]models.Signature, 0)
 	// Create buffer based on chunk size
@@ -88,18 +88,18 @@ func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) 
 	return signature, nil
 }
 
-// generateStrongHash() will hash a provided buffer with SHA-256
-// Function returns final `hash` value encoded as a hex string
+// generateStrongHash() will hash a provided buffer with SHA-256.
+// Function returns final `hash` value encoded as a hex string.
 func generateStrongHash(buffer []byte, chunkSize int64) string {
 	sha := sha256.New()
 	sha.Write(buffer)
 	return hex.EncodeToString(sha.Sum(nil))
 }
 
-// generateWeakHash() will generate a `weak` hash of a byte array based on the Rabin–Karp algorithm
-// EG hash = ((array[0] * seed^n-1) + (array[1] * seed^n-2) + ... + (array[n] * seed^0)) % mod
-// Hash is classed as `weak` as there is potential for collisions
-// Function returns `hash`
+// generateWeakHash() will generate a `weak` hash of a byte array based on the Rabin–Karp algorithm.
+// EG hash = ((array[0] * seed^n-1) + (array[1] * seed^n-2) + ... + (array[n] * seed^0)) % mod;
+// Hash is classed as `weak` as there is potential for collisions.
+// Function returns `hash`.
 func generateWeakHash(buffer []byte, chunkSize int64) int64 {
 	multiplier := chunkSize - 1
 	var hash int64 = 0
@@ -117,16 +117,16 @@ func generateWeakHash(buffer []byte, chunkSize int64) int64 {
 	return hash
 }
 
-// modulo() will run a mod operation on 2 numbers and return the result
-// math/big is used over the built-in mod operator as `%` does not implement Euclidean modulus
-// Function returns `result` -> EG x % y
+// modulo() will run a mod operation on 2 numbers and return the result.
+// math/big is used over the built-in mod operator as `%` does not implement Euclidean modulus.
+// Function returns `result` -> EG x % y;
 func modulo(x int64, y int64) int64 {
 	return new(big.Int).Mod(big.NewInt(x), big.NewInt(y)).Int64()
 }
 
-// pop() will remove the first item from a provided buffer
-// Function returns `updatedBuffer, initialByte`
-// Note: initialByte is the item popped from buffer
+// pop() will remove the first item from a provided buffer.
+// Function returns `updatedBuffer, initialByte`.
+// Note: initialByte is the item popped from buffer.
 func pop(buffer []byte) ([]byte, byte) {
 	// Create new slice
 	buf := make([]byte, 0)
@@ -137,10 +137,10 @@ func pop(buffer []byte) ([]byte, byte) {
 	return buf, initialByte
 }
 
-// populateBuffer() will create a new buffer and populate it, based on `chuck` size, from the provided file reader
-// Function will return `buffer, nil` when successful
-// Function will return `emptyBuffer, EOF` error when reader reaches end of file
-// Function will return `emptyBuffer, error` when unable to read from file
+// populateBuffer() will create a new buffer and populate it, based on `chuck` size, from the provided file reader.
+// Function will return `buffer, nil` when successful.
+// Function will return `emptyBuffer, EOF` error when reader reaches end of file.
+// Function will return `emptyBuffer, error` when unable to read from file.
 func populateBuffer(reader Reader, chunkSize int64) ([]byte, error) {
 	// Create buffer based on chunk size
 	buffer := make([]byte, chunkSize)
@@ -163,19 +163,19 @@ func populateBuffer(reader Reader, chunkSize int64) ([]byte, error) {
 	return buffer, nil
 }
 
-// push() will append the provided byte to the end of the provided buffer
-// Function returns `updatedBuffer`
+// push() will append the provided byte to the end of the provided buffer.
+// Function returns `updatedBuffer`.
 func push(buffer []byte, item byte) []byte {
 	return append(buffer, item)
 }
 
-// roll() will move the rolling hash function to the next position
+// roll() will move the rolling hash function to the next position.
 // This will include: read next item from file; popping 1st item from buffer; pushing new item to end of buffer;
-// Function will return `updatedBuffer, initialByte, nextByte, nil` when successful
-// Note: initialByte = byte popped from first position
-// Note: nextByte = byte pushed onto end of buffer
-// Function will return `emptyBuffer, 0, 0, EOF_error` when file reader reaches EOF
-// Function will return `emptyBuffer, 0, 0, error` when unable to read byte from file
+// Function will return `updatedBuffer, initialByte, nextByte, nil` when successful.
+// Note: initialByte = byte popped from first position.
+// Note: nextByte = byte pushed onto end of buffer.
+// Function will return `emptyBuffer, 0, 0, EOF_error` when file reader reaches EOF.
+// Function will return `emptyBuffer, 0, 0, error` when unable to read byte from file.
 func roll(reader Reader, buffer []byte) ([]byte, byte, byte, error) {
 	// Read a byte from file reader
 	nextByte, err := reader.ReadByte()
@@ -195,9 +195,9 @@ func roll(reader Reader, buffer []byte) ([]byte, byte, byte, error) {
 	return buf, initialByte, nextByte, nil
 }
 
-// rollWeakHash() will roll a hash value to the next position based on initial byte of hash + new byte to roll in
-// EG newHash = ((((hash - ((initialByte * seed^n-1) % mod)) * seed) % mod) + nextByte) % mod
-// This function will return `updatedHash` once complete
+// rollWeakHash() will roll a hash value to the next position based on initial byte of hash + new byte to roll in.
+// EG newHash = ((((hash - ((initialByte * seed^n-1) % mod)) * seed) % mod) + nextByte) % mod;
+// This function will return `updatedHash` once complete.
 func rollWeakHash(hash int64, initialByte byte, nextByte byte, chunkSize int64) int64 {
 	// Hash initialByte -> initialByte * seed^n-1
 	hashedInitialByte := int64(initialByte) * int64(math.Pow(float64(seed), float64(chunkSize-1)))

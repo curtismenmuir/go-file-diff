@@ -22,12 +22,12 @@ var (
 	generateDelta     = sync.GenerateDelta
 )
 
-// getSignature() will generate a Signature of a specified file and write the Signature output to a file
-// Function returns `Signature, nil` when successful
-// Function returns `EmptySignature, OriginalFileNotExistError` when Original file cannot be found
-// Function returns `EmptySignature, OriginalFileIsFolderError` when found a folder dir instead of Original file
-// Function returns `EmptySignature, UnableToGenerateSignatureError` when unable to generate file Signature
-// Function returns `EmptySignature, UnableToWriteToSignatureFileError` when unable to write Signature to output file
+// getSignature() will generate a Signature of a specified file and write the Signature output to a file.
+// Function returns `Signature, nil` when successful.
+// Function returns `EmptySignature, OriginalFileNotExistError` when Original file cannot be found.
+// Function returns `EmptySignature, OriginalFileIsFolderError` when found a folder dir instead of Original file.
+// Function returns `EmptySignature, UnableToGenerateSignatureError` when unable to generate file Signature.
+// Function returns `EmptySignature, UnableToWriteToSignatureFileError` when unable to write Signature to output file.
 func getSignature(cmd models.CMD) ([]models.Signature, error) {
 	// Create FileReader for Original file
 	reader, err := openFile(cmd.OriginalFile)
@@ -60,13 +60,13 @@ func getSignature(cmd models.CMD) ([]models.Signature, error) {
 	return signature, nil
 }
 
-// getDelta() will attempt to generate a Delta changeset for syncing 2 files
-// Delta changeset can be applied to the Original file to sync latest updates
-// Delta generation will use a Signature of the original file to compare against updates
-// Function returns "not implemented" error as a placeholder for now (when no other errors thrown)
-// Function returns `UpdatedFileDoesNotExistError` when unable to find Updated file
-// Function returns `UpdatedFileIsFolderError` when found a folder dir instead of Updated file
-// Function returns `UnableToGenerateDeltaError` when unable to generate Delta
+// getDelta() will attempt to generate a Delta changeset for syncing 2 files.
+// Delta changeset can be applied to the Original file to sync latest updates.
+// Delta generation will use a Signature of the original file to compare against updates.
+// Function returns "not implemented" error as a placeholder for now (when no other errors thrown).
+// Function returns `UpdatedFileDoesNotExistError` when unable to find Updated file.
+// Function returns `UpdatedFileIsFolderError` when found a folder dir instead of Updated file.
+// Function returns `UnableToGenerateDeltaError` when unable to generate Delta.
 func getDelta(cmd models.CMD, signature []models.Signature) error {
 	// Create FileReader for Updated file
 	reader, err := openFile(cmd.UpdatedFile)
