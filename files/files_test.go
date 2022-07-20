@@ -415,10 +415,10 @@ func TestOpenSignature(t *testing.T) {
 		require.Equal(t, expectedSignature, signature)
 	})
 
-	t.Run("should return `emptySignature, UnableToOpenSignatureFile` when unable to open file", func(t *testing.T) {
+	t.Run("should return `emptySignature, UnableToOpenSignatureFileError` when unable to open file", func(t *testing.T) {
 		// Setup
 		testError := errors.New(errorMessage)
-		expectedError := errors.New(constants.UnableToOpenSignatureFile)
+		expectedError := errors.New(constants.UnableToOpenSignatureFileError)
 		expectedSignature := []models.Signature{}
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
@@ -437,11 +437,11 @@ func TestOpenSignature(t *testing.T) {
 		require.Equal(t, expectedSignature, signature)
 	})
 
-	t.Run("should return `emptySignature, UnableToDecodeSignatureFromFile` when unable to decode Signature from file", func(t *testing.T) {
+	t.Run("should return `emptySignature, UnableToDecodeSignatureFromFileError` when unable to decode Signature from file", func(t *testing.T) {
 		// Setup
 		file := os.File{}
 		decoder := decoderMock{isError: true}
-		expectedError := errors.New(constants.UnableToDecodeSignatureFromFile)
+		expectedError := errors.New(constants.UnableToDecodeSignatureFromFileError)
 		expectedSignature := []models.Signature{}
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
@@ -517,9 +517,9 @@ func TestVerifyOutputDirExists(t *testing.T) {
 		require.Equal(t, expectedError, result)
 	})
 
-	t.Run("should return `unable to create Output folder` error when unable to create folder dir", func(t *testing.T) {
+	t.Run("should return `UnableToCreateOutputsFolderError` error when unable to create folder dir", func(t *testing.T) {
 		// Setup
-		expectedError := errors.New(constants.UnableToCreateOutputsFolder)
+		expectedError := errors.New(constants.UnableToCreateOutputsFolderError)
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			return nil, errors.New(errorMessage)
@@ -617,11 +617,11 @@ func TestWriteSignatureToFile(t *testing.T) {
 		require.Equal(t, expectedError, result)
 	})
 
-	t.Run("should return `unable to create Sig file` error when unable to create file", func(t *testing.T) {
+	t.Run("should return `UnableToCreateSignatureFileError` error when unable to create file", func(t *testing.T) {
 		// Setup
 		file := os.File{}
 		signature := []models.Signature{}
-		expectedError := errors.New(constants.UnableToCreateSignatureFile)
+		expectedError := errors.New(constants.UnableToCreateSignatureFileError)
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			fileInfo := fileInfoMock{isDir: false}
@@ -638,12 +638,12 @@ func TestWriteSignatureToFile(t *testing.T) {
 		require.Equal(t, expectedError, result)
 	})
 
-	t.Run("should return `unable to write to Sig file` error when unable to write to file", func(t *testing.T) {
+	t.Run("should return `UnableToWriteToSignatureFileError` error when unable to write to file", func(t *testing.T) {
 		// Setup
 		file := os.File{}
 		encoder := encoderMock{isError: true}
 		signature := []models.Signature{}
-		expectedError := errors.New(constants.UnableToWriteToSignatureFile)
+		expectedError := errors.New(constants.UnableToWriteToSignatureFileError)
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			fileInfo := fileInfoMock{isDir: false}
@@ -746,11 +746,11 @@ func TestWriteToFile(t *testing.T) {
 		require.Equal(t, expectedError, result)
 	})
 
-	t.Run("should return `unable to create Sig file` error when unable to create file", func(t *testing.T) {
+	t.Run("should return `UnableToCreateSignatureFileError` error when unable to create file", func(t *testing.T) {
 		// Setup
 		file := os.File{}
 		output := []byte(testOutput)
-		expectedError := errors.New(constants.UnableToCreateSignatureFile)
+		expectedError := errors.New(constants.UnableToCreateSignatureFileError)
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			fileInfo := fileInfoMock{isDir: false}
@@ -767,11 +767,11 @@ func TestWriteToFile(t *testing.T) {
 		require.Equal(t, expectedError, result)
 	})
 
-	t.Run("should return `unable to write to Sig file` error when unable to write to file", func(t *testing.T) {
+	t.Run("should return `UnableToWriteToSignatureFileError` error when unable to write to file", func(t *testing.T) {
 		// Setup
 		file := os.File{}
 		output := []byte(testOutput)
-		expectedError := errors.New(constants.UnableToWriteToSignatureFile)
+		expectedError := errors.New(constants.UnableToWriteToSignatureFileError)
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			fileInfo := fileInfoMock{isDir: false}

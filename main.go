@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/curtismenmuir/go-file-diff/cmd"
 	"github.com/curtismenmuir/go-file-diff/constants"
@@ -20,6 +19,7 @@ var (
 	writeSigToFile    = files.WriteSignatureToFile
 	generateSignature = sync.GenerateSignature
 	openSignature     = files.OpenSignature
+	generateDelta     = sync.GenerateDelta
 )
 
 // getSignature() will generate a Signature of a specified file and write the Signature output to a file
@@ -27,9 +27,9 @@ var (
 // Function returns `EmptySignature, OriginalFileNotExistError` when Original file cannot be found
 // Function returns `EmptySignature, OriginalFileIsFolderError` when found a folder dir instead of Original file
 // Function returns `EmptySignature, UnableToGenerateSignatureError` when unable to generate file Signature
-// Function returns `EmptySignature, UnableToWriteSignatureError` when unable to write Signature to output file
+// Function returns `EmptySignature, UnableToWriteToSignatureFileError` when unable to write Signature to output file
 func getSignature(cmd models.CMD) ([]models.Signature, error) {
-	// Read Original file
+	// Create FileReader for Original file
 	reader, err := openFile(cmd.OriginalFile)
 	if err != nil {
 		// Replace generic `file not exist` error with specific Original File error
@@ -48,21 +48,48 @@ func getSignature(cmd models.CMD) ([]models.Signature, error) {
 	// Generate Signature
 	signature, err := generateSignature(reader, cmd.Verbose)
 	if err != nil {
-		return []models.Signature{}, errors.New(constants.UnableToGenerateSignature)
+		return []models.Signature{}, errors.New(constants.UnableToGenerateSignatureError)
 	}
 
 	// Write Signature to file
 	err = writeSigToFile(signature, cmd.SignatureFile)
 	if err != nil {
-		return []models.Signature{}, errors.New(constants.UnableToWriteToSignatureFile)
+		return []models.Signature{}, errors.New(constants.UnableToWriteToSignatureFileError)
 	}
 
 	return signature, nil
 }
 
-// getDelta is a placeholder which returns "not implemented" error
+// getDelta() will attempt to generate a Delta changeset for syncing 2 files
+// Delta changeset can be applied to the Original file to sync latest updates
+// Delta generation will use a Signature of the original file to compare against updates
+// Function returns "not implemented" error as a placeholder for now (when no other errors thrown)
+// Function returns `UpdatedFileDoesNotExistError` when unable to find Updated file
+// Function returns `UpdatedFileIsFolderError` when found a folder dir instead of Updated file
+// Function returns `UnableToGenerateDeltaError` when unable to generate Delta
 func getDelta(cmd models.CMD, signature []models.Signature) error {
-	logger(fmt.Sprintf("Signature: %+v\n", signature), true)
+	// Create FileReader for Updated file
+	reader, err := openFile(cmd.UpdatedFile)
+	if err != nil {
+		// Replace generic `file not exist` error with specific Updated File error
+		if err.Error() == constants.FileDoesNotExistError {
+			return errors.New(constants.UpdatedFileDoesNotExistError)
+		}
+
+		// Replace generic `file is folder dir` error with specific Updated File error
+		if err.Error() == constants.SearchingForFileButFoundDirError {
+			return errors.New(constants.UpdatedFileIsFolderError)
+		}
+
+		return err
+	}
+
+	// Generate Delta
+	err = generateDelta(reader, signature, cmd.Verbose)
+	if err != nil {
+		return errors.New(constants.UnableToGenerateDeltaError)
+	}
+
 	return errors.New(constants.DeltaNotImplementedError)
 }
 

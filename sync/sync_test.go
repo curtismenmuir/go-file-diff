@@ -50,6 +50,19 @@ func (r readerMock) ReadByte() (byte, error) {
 	return testByte, nil
 }
 
+func TestGenerateDelta(t *testing.T) {
+	t.Run("should return `UnableToGenerateDeltaError`", func(t *testing.T) {
+		// Setup
+		reader := readerMock{isReadError: false, readSize: int(testChunk)}
+		signature := []models.Signature{}
+		expectedError := errors.New(constants.UnableToGenerateDeltaError)
+		// Run
+		err := GenerateDelta(reader, signature, false)
+		// Verify
+		require.Equal(t, expectedError, err)
+	})
+}
+
 func TestGenerateSignature(t *testing.T) {
 	t.Run("should return `Signature, nil` when successfully processed all file data for Signature", func(t *testing.T) {
 		// Setup

@@ -29,6 +29,11 @@ type Reader interface {
 	ReadByte() (byte, error)
 }
 
+// GenerateDelta() is a placeholder and returns `UnableToGenerateDelta` error
+func GenerateDelta(reader Reader, signature []models.Signature, verbose bool) error {
+	return errors.New(constants.UnableToGenerateDeltaError)
+}
+
 // GenerateSignature() will create a file Signature from a provided file reader
 // Signature will contain a `weak` rolling hash of the file in 16 byte chunks
 // Signature will also contain a strong hash of each chunk to avoid collisions when generating Delta

@@ -128,8 +128,8 @@ func OpenFile(fileName string) (*bufio.Reader, error) {
 // Function will return `Signature, nil` when successfully retrieve a Signature from file
 // Function will return `emptySignature, error` when unable to check existence of Signature file
 // Function will return `emptySignature, SignatureFileDoesNotExistError` when Signature file not found
-// Function will return `emptySignature, UnableToOpenSignatureFile` when unable to open Signature file
-// Function will return `emptySignature, UnableToDecodeSignatureFromFile` when unable to decode Signature from file (EG invalid signature file)
+// Function will return `emptySignature, UnableToOpenSignatureFileError` when unable to open Signature file
+// Function will return `emptySignature, UnableToDecodeSignatureFromFileError` when unable to decode Signature from file (EG invalid signature file)
 func OpenSignature(fileName string, verbose bool) ([]models.Signature, error) {
 	signature := []models.Signature{}
 	// Check if Signature file exists
@@ -143,7 +143,7 @@ func OpenSignature(fileName string, verbose bool) ([]models.Signature, error) {
 	// Open Signature file
 	file, err := open(fileName)
 	if err != nil {
-		return signature, errors.New(constants.UnableToOpenSignatureFile)
+		return signature, errors.New(constants.UnableToOpenSignatureFileError)
 	}
 
 	defer file.Close()
@@ -152,7 +152,7 @@ func OpenSignature(fileName string, verbose bool) ([]models.Signature, error) {
 	// Decode file to Signature struct
 	err = decoder.Decode(&signature)
 	if err != nil {
-		return signature, errors.New(constants.UnableToDecodeSignatureFromFile)
+		return signature, errors.New(constants.UnableToDecodeSignatureFromFileError)
 	}
 
 	logger(fmt.Sprintf("File Signature: %+v\n", signature), verbose)
@@ -162,8 +162,8 @@ func OpenSignature(fileName string, verbose bool) ([]models.Signature, error) {
 // verifyOutputDirExists() will check for the existence of an `Outputs/` folder and will create if not exists
 // Function will return `nil` when folder already exists
 // Function will return `nil` when folder has been created successfully
-// Function will return `unable to create Outputs dir` error when folder does not exist and unable to create
-// Function will return error when unable to verify if Outputs folder exists
+// Function will return `UnableToCreateOutputsFolderError` error when folder does not exist and unable to create
+// Function will return `error` when unable to verify if Outputs folder exists
 func verifyOutputDirExists() error {
 	// Check if `Outputs` folder exists
 	exists, err := doesExist(outputDir, false)
@@ -173,7 +173,7 @@ func verifyOutputDirExists() error {
 		// Create folder if not exists
 		err = createFolder(outputDir)
 		if err != nil {
-			return errors.New(constants.UnableToCreateOutputsFolder)
+			return errors.New(constants.UnableToCreateOutputsFolderError)
 		}
 	}
 
@@ -182,8 +182,8 @@ func verifyOutputDirExists() error {
 
 // WriteSignatureToFile() will create a Signature file in Outputs folder (based on provided fileName), and encode Signature before writing to file
 // Function will return `nil` when file has been created and written to successfully
-// Function will return `unable to create Sig file` error when unable to create file
-// Function will return `unable to write to Sig file` error when unable to write output to file after creation
+// Function will return `UnableToCreateSignatureFileError` error when unable to create file
+// Function will return `UnableToWriteToSignatureFileError` error when unable to write output to file after creation
 // Function will return `error` when unable to verify if Output folder exists
 func WriteSignatureToFile(signature []models.Signature, fileName string) error {
 	// Verify `Outputs` folder exists
@@ -195,7 +195,7 @@ func WriteSignatureToFile(signature []models.Signature, fileName string) error {
 	// Create file
 	file, err := createFile(outputDir + fileName)
 	if err != nil {
-		return errors.New(constants.UnableToCreateSignatureFile)
+		return errors.New(constants.UnableToCreateSignatureFileError)
 	}
 
 	defer file.Close()
@@ -204,7 +204,7 @@ func WriteSignatureToFile(signature []models.Signature, fileName string) error {
 	// Encode Signature
 	err = encoder.Encode(signature)
 	if err != nil {
-		return errors.New(constants.UnableToWriteToSignatureFile)
+		return errors.New(constants.UnableToWriteToSignatureFileError)
 	}
 
 	logger(fmt.Sprintf("Signature file created: %s%s\n", outputDir, fileName), true)
@@ -212,10 +212,11 @@ func WriteSignatureToFile(signature []models.Signature, fileName string) error {
 }
 
 // WriteToFile() will create a file in Outputs folder (based on provided fileName), and write the provided output to the file
+// TODO - Remove this function if no longer required
 // Function will return `nil` when file has been created and written to successfully
-// Function will return `unable to create Sig file` error when unable to create file
-// Function will return `unable to write to Sig file` error when unable to write output to file after creation
-// Function will return error when unable to verify if Output folder exists
+// Function will return `UnableToCreateSignatureFileError` error when unable to create file
+// Function will return `UnableToWriteToSignatureFileError` error when unable to write output to file after creation
+// Function will return `error` when unable to verify if Output folder exists
 func WriteToFile(fileName string, output []byte) error {
 	// Verify `Outputs` folder exists
 	err := verifyOutputDirExists()
@@ -226,7 +227,7 @@ func WriteToFile(fileName string, output []byte) error {
 	// Create file
 	file, err := createFile(outputDir + fileName)
 	if err != nil {
-		return errors.New(constants.UnableToCreateSignatureFile)
+		return errors.New(constants.UnableToCreateSignatureFileError)
 	}
 
 	defer file.Close()
@@ -235,7 +236,7 @@ func WriteToFile(fileName string, output []byte) error {
 	for index := range output {
 		err := fileWriter.WriteByte(output[index])
 		if err != nil {
-			return errors.New(constants.UnableToWriteToSignatureFile)
+			return errors.New(constants.UnableToWriteToSignatureFileError)
 		}
 	}
 
