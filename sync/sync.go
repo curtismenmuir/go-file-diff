@@ -30,7 +30,27 @@ type Reader interface {
 }
 
 // GenerateDelta() is a placeholder and returns `UnableToGenerateDelta` error.
-func GenerateDelta(reader Reader, signature []models.Signature, verbose bool) error {
+func GenerateDelta(reader Reader, signature models.Signature, verbose bool) error {
+	// Create buffer based on chunk size
+	buffer, err := initialiseBuffer(reader, chunk)
+	if err != nil {
+		return err
+	}
+
+	logger(fmt.Sprintf("Initial Buffer = %q", buffer[:]), verbose)
+	// Generate Weak hash of initial buffer
+	weakHash := generateWeakHash(buffer, chunk)
+	logger(fmt.Sprintf("Weak hash = %d", weakHash), verbose)
+	// Search Signature for a match
+	if item, ok := signature[weakHash]; ok {
+		logger(fmt.Sprintf("INITIAL HASH FOUND = %d:%d", item.Head, item.Tail), verbose)
+		// TODO Generate Strong hash of buffer
+		// TODO Compare against strong hash of matching signature item
+		// TODO If matches, then chunks are the same :) record match for Delta
+	}
+
+	// TODO Roll buffer, update hashes and compare against Signature
+
 	return errors.New(constants.UnableToGenerateDeltaError)
 }
 
@@ -39,12 +59,14 @@ func GenerateDelta(reader Reader, signature []models.Signature, verbose bool) er
 // Signature will also contain a strong hash of each chunk to avoid collisions when generating Delta.
 // Function returns `Signature, nil` when successful.
 // Function returns `emptySignature, error` when unsuccessful.
-func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) {
-	signature := make([]models.Signature, 0)
+func GenerateSignature(reader Reader, verbose bool) (models.Signature, error) {
+	head := 0
+	tail := int(chunk) - 1
+	signature := make(models.Signature, 0)
 	// Create buffer based on chunk size
 	buffer, err := initialiseBuffer(reader, chunk)
 	if err != nil {
-		return []models.Signature{}, err
+		return models.Signature{}, err
 	}
 
 	logger(fmt.Sprintf("Initial Buffer = %q", buffer[:]), verbose)
@@ -55,12 +77,13 @@ func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) 
 	strongHash := generateStrongHash(buffer, chunk)
 	logger(fmt.Sprintf("Strong hash = %s\n", strongHash), verbose)
 	// Store values in Signature
-	signature = append(signature, models.Signature{Weak: weakHash, Strong: strongHash})
-
+	signature[weakHash] = models.StrongSignature{Hash: strongHash, Head: head, Tail: tail}
 	// Loop until EOF
 	for {
 		var initialByte byte
 		var nextByte byte
+		head++
+		tail++
 		// Roll buffer to next position
 		buffer, initialByte, nextByte, err = rollBuffer(reader, buffer)
 		if err != nil {
@@ -70,7 +93,7 @@ func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) 
 			}
 
 			// Handle errors
-			return []models.Signature{}, err
+			return models.Signature{}, err
 		}
 
 		logger(fmt.Sprintf("Rolled Buffer = %q", buffer[:]), verbose)
@@ -81,7 +104,7 @@ func GenerateSignature(reader Reader, verbose bool) ([]models.Signature, error) 
 		strongHash = generateStrongHash(buffer, chunk)
 		logger(fmt.Sprintf("Strong hash = %s\n", strongHash), verbose)
 		// Add hashes to Signature
-		signature = append(signature, models.Signature{Weak: weakHash, Strong: strongHash})
+		signature[weakHash] = models.StrongSignature{Hash: strongHash, Head: head, Tail: tail}
 	}
 
 	logger(fmt.Sprintf("Signature: %+v\n", signature), verbose)

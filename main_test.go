@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	file          string             = "some-file.txt"
-	errorMessage  string             = "Some Error"
-	testSignature []models.Signature = []models.Signature{{Weak: 123, Strong: "some-hex"}}
+	file          string           = "some-file.txt"
+	errorMessage  string           = "Some Error"
+	testSignature models.Signature = models.Signature{123: models.StrongSignature{Hash: "some-hash", Head: 0, Tail: 15}}
 )
 
 func TestGetSignature(t *testing.T) {
@@ -37,11 +37,11 @@ func TestGetSignature(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateSignature = func(reader sync.Reader, verbose bool) ([]models.Signature, error) {
+		generateSignature = func(reader sync.Reader, verbose bool) (models.Signature, error) {
 			return testSignature, nil
 		}
 
-		writeSigToFile = func(signature []models.Signature, fileName string) error {
+		writeSigToFile = func(signature models.Signature, fileName string) error {
 			return nil
 		}
 
@@ -74,7 +74,7 @@ func TestGetSignature(t *testing.T) {
 		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
-		require.Equal(t, []models.Signature{}, signature)
+		require.Equal(t, models.Signature{}, signature)
 	})
 
 	t.Run("should return `EmptySignature, OriginalFileIsFolderError` when user provides a folder dir instead of Original file", func(t *testing.T) {
@@ -99,7 +99,7 @@ func TestGetSignature(t *testing.T) {
 		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
-		require.Equal(t, []models.Signature{}, signature)
+		require.Equal(t, models.Signature{}, signature)
 	})
 
 	t.Run("should return `EmptySignature, Error` when unable to open Original file", func(t *testing.T) {
@@ -124,7 +124,7 @@ func TestGetSignature(t *testing.T) {
 		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
-		require.Equal(t, []models.Signature{}, signature)
+		require.Equal(t, models.Signature{}, signature)
 	})
 
 	t.Run("should return `EmptySignature, UnableToGenerateSignatureError` when fails to generate Signature of Original file", func(t *testing.T) {
@@ -146,7 +146,7 @@ func TestGetSignature(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateSignature = func(reader sync.Reader, verbose bool) ([]models.Signature, error) {
+		generateSignature = func(reader sync.Reader, verbose bool) (models.Signature, error) {
 			return nil, expectedError
 		}
 
@@ -154,7 +154,7 @@ func TestGetSignature(t *testing.T) {
 		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
-		require.Equal(t, []models.Signature{}, signature)
+		require.Equal(t, models.Signature{}, signature)
 	})
 
 	t.Run("should return `EmptySignature, UnableToWriteToSignatureFileError` when unable to write to Signature file", func(t *testing.T) {
@@ -176,11 +176,11 @@ func TestGetSignature(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateSignature = func(reader sync.Reader, verbose bool) ([]models.Signature, error) {
+		generateSignature = func(reader sync.Reader, verbose bool) (models.Signature, error) {
 			return nil, nil
 		}
 
-		writeSigToFile = func(signature []models.Signature, fileName string) error {
+		writeSigToFile = func(signature models.Signature, fileName string) error {
 			return errors.New(errorMessage)
 		}
 
@@ -188,7 +188,7 @@ func TestGetSignature(t *testing.T) {
 		signature, err := getSignature(cmd)
 		// Verify
 		require.Equal(t, expectedError, err)
-		require.Equal(t, []models.Signature{}, signature)
+		require.Equal(t, models.Signature{}, signature)
 	})
 }
 
@@ -212,7 +212,7 @@ func TestGetDelta(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateDelta = func(reader sync.Reader, signature []models.Signature, verbose bool) error {
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) error {
 			return nil
 		}
 
@@ -313,7 +313,7 @@ func TestGetDelta(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateDelta = func(reader sync.Reader, signature []models.Signature, verbose bool) error {
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) error {
 			return expectedError
 		}
 
@@ -356,7 +356,7 @@ func TestMain(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		writeSigToFile = func(signature []models.Signature, fileName string) error {
+		writeSigToFile = func(signature models.Signature, fileName string) error {
 			return nil
 		}
 
@@ -400,7 +400,7 @@ func TestMain(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		writeSigToFile = func(signature []models.Signature, fileName string) error {
+		writeSigToFile = func(signature models.Signature, fileName string) error {
 			return errors.New(errorMessage)
 		}
 
@@ -440,7 +440,7 @@ func TestMain(t *testing.T) {
 			return true
 		}
 
-		openSignature = func(fileName string, verbose bool) ([]models.Signature, error) {
+		openSignature = func(fileName string, verbose bool) (models.Signature, error) {
 			return testSignature, nil
 		}
 
@@ -449,7 +449,7 @@ func TestMain(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateDelta = func(reader sync.Reader, signature []models.Signature, verbose bool) error {
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) error {
 			return nil
 		}
 
@@ -494,11 +494,11 @@ func TestMain(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		writeSigToFile = func(signature []models.Signature, fileName string) error {
+		writeSigToFile = func(signature models.Signature, fileName string) error {
 			return nil
 		}
 
-		generateDelta = func(reader sync.Reader, signature []models.Signature, verbose bool) error {
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) error {
 			return nil
 		}
 
@@ -538,7 +538,7 @@ func TestMain(t *testing.T) {
 			return true
 		}
 
-		openSignature = func(fileName string, verbose bool) ([]models.Signature, error) {
+		openSignature = func(fileName string, verbose bool) (models.Signature, error) {
 			return nil, errors.New(expectedError)
 		}
 

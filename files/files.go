@@ -130,8 +130,8 @@ func OpenFile(fileName string) (*bufio.Reader, error) {
 // Function will return `emptySignature, SignatureFileDoesNotExistError` when Signature file not found.
 // Function will return `emptySignature, UnableToOpenSignatureFileError` when unable to open Signature file.
 // Function will return `emptySignature, UnableToDecodeSignatureFromFileError` when unable to decode Signature from file (EG invalid signature file).
-func OpenSignature(fileName string, verbose bool) ([]models.Signature, error) {
-	signature := []models.Signature{}
+func OpenSignature(fileName string, verbose bool) (models.Signature, error) {
+	signature := models.Signature{}
 	// Check if Signature file exists
 	exists, err := doesExist(fileName, true)
 	if err != nil {
@@ -185,7 +185,7 @@ func verifyOutputDirExists() error {
 // Function will return `UnableToCreateSignatureFileError` error when unable to create file.
 // Function will return `UnableToWriteToSignatureFileError` error when unable to write output to file after creation.
 // Function will return `error` when unable to verify if Output folder exists.
-func WriteSignatureToFile(signature []models.Signature, fileName string) error {
+func WriteSignatureToFile(signature models.Signature, fileName string) error {
 	// Verify `Outputs` folder exists
 	err := verifyOutputDirExists()
 	if err != nil {
@@ -212,7 +212,7 @@ func WriteSignatureToFile(signature []models.Signature, fileName string) error {
 }
 
 // WriteToFile() will create a file in Outputs folder (based on provided fileName), and write the provided output to the file.
-// TODO - Remove this function if no longer required.
+// Note: this will be used for the patch process
 // Function will return `nil` when file has been created and written to successfully.
 // Function will return `UnableToCreateSignatureFileError` error when unable to create file.
 // Function will return `UnableToWriteToSignatureFileError` error when unable to write output to file after creation.

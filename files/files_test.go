@@ -349,7 +349,7 @@ func TestOpenSignature(t *testing.T) {
 		decoder := decoderMock{isError: false}
 		// Decoder mock doesn't update provided pointer, so use empty struct for now
 		// NOTE: Function will only return `err` as `nil` when successful
-		expectedSignature := []models.Signature{}
+		expectedSignature := models.Signature{}
 		var expectedError error = nil
 
 		// Mock
@@ -377,7 +377,7 @@ func TestOpenSignature(t *testing.T) {
 		// Setup
 		testError := errors.New(errorMessage)
 		expectedError := errors.New(constants.UnableToCheckFileFolderExistsError)
-		expectedSignature := []models.Signature{}
+		expectedSignature := models.Signature{}
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			return nil, testError
@@ -398,7 +398,7 @@ func TestOpenSignature(t *testing.T) {
 		// Setup
 		testError := errors.New(errorMessage)
 		expectedError := errors.New(constants.SignatureFileDoesNotExistError)
-		expectedSignature := []models.Signature{}
+		expectedSignature := models.Signature{}
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			return nil, testError
@@ -419,7 +419,7 @@ func TestOpenSignature(t *testing.T) {
 		// Setup
 		testError := errors.New(errorMessage)
 		expectedError := errors.New(constants.UnableToOpenSignatureFileError)
-		expectedSignature := []models.Signature{}
+		expectedSignature := models.Signature{}
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			fileInfo := fileInfoMock{isDir: false}
@@ -442,7 +442,7 @@ func TestOpenSignature(t *testing.T) {
 		file := os.File{}
 		decoder := decoderMock{isError: true}
 		expectedError := errors.New(constants.UnableToDecodeSignatureFromFileError)
-		expectedSignature := []models.Signature{}
+		expectedSignature := models.Signature{}
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			fileInfo := fileInfoMock{isDir: false}
@@ -545,7 +545,7 @@ func TestWriteSignatureToFile(t *testing.T) {
 		// Setup
 		file := os.File{}
 		encoder := encoderMock{isError: false}
-		signature := []models.Signature{}
+		signature := models.Signature{}
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			fileInfo := fileInfoMock{isDir: false}
@@ -570,7 +570,7 @@ func TestWriteSignatureToFile(t *testing.T) {
 		// Setup
 		file := os.File{}
 		encoder := encoderMock{isError: false}
-		signature := []models.Signature{}
+		signature := models.Signature{}
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
 			return nil, errors.New(errorMessage)
@@ -600,7 +600,7 @@ func TestWriteSignatureToFile(t *testing.T) {
 
 	t.Run("should return `error` when unable to verify if Output dir exists", func(t *testing.T) {
 		// Setup
-		signature := []models.Signature{}
+		signature := models.Signature{}
 		expectedError := errors.New(constants.UnableToCheckFileFolderExistsError)
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
@@ -620,7 +620,7 @@ func TestWriteSignatureToFile(t *testing.T) {
 	t.Run("should return `UnableToCreateSignatureFileError` error when unable to create file", func(t *testing.T) {
 		// Setup
 		file := os.File{}
-		signature := []models.Signature{}
+		signature := models.Signature{}
 		expectedError := errors.New(constants.UnableToCreateSignatureFileError)
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {
@@ -642,7 +642,7 @@ func TestWriteSignatureToFile(t *testing.T) {
 		// Setup
 		file := os.File{}
 		encoder := encoderMock{isError: true}
-		signature := []models.Signature{}
+		signature := models.Signature{}
 		expectedError := errors.New(constants.UnableToWriteToSignatureFileError)
 		// Mock
 		getFileInfo = func(name string) (fs.FileInfo, error) {

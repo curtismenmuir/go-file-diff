@@ -54,8 +54,30 @@ func TestGenerateDelta(t *testing.T) {
 	t.Run("should return `UnableToGenerateDeltaError`", func(t *testing.T) {
 		// Setup
 		reader := readerMock{isReadError: false, readSize: int(testChunk)}
-		signature := []models.Signature{}
+		signature := models.Signature{}
+		signature[testBufferHash] = models.StrongSignature{Hash: testBufferStrongHash, Head: 0, Tail: 15}
 		expectedError := errors.New(constants.UnableToGenerateDeltaError)
+		// Mock
+		initialiseBuffer = func(reader Reader, chunkSize int64) ([]byte, error) {
+			return testBuffer, nil
+		}
+
+		// Run
+		err := GenerateDelta(reader, signature, false)
+		// Verify
+		require.Equal(t, expectedError, err)
+	})
+
+	t.Run("should return `error` when unable to populate buffer from file", func(t *testing.T) {
+		// Setup
+		reader := readerMock{isReadError: false, readSize: int(testChunk)}
+		signature := models.Signature{}
+		expectedError := errors.New(errorMessage)
+		// Mock
+		initialiseBuffer = func(reader Reader, chunkSize int64) ([]byte, error) {
+			return []byte{}, expectedError
+		}
+
 		// Run
 		err := GenerateDelta(reader, signature, false)
 		// Verify
@@ -69,7 +91,9 @@ func TestGenerateSignature(t *testing.T) {
 		reader := readerMock{isReadError: false, readSize: int(testChunk)}
 		hasReadByte := false
 		updatedBuffer := []byte{'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', testBufferNextChar}
-		expectedSignature := []models.Signature{{Weak: 76935130210, Strong: "f39dac6cbaba535e2c207cd0cd8f154974223c848f727f98b3564cea569b41cf"}, {Weak: 16426995555, Strong: "2c9d26566889bcb66e96d74b97b14bc36cfd8c2949ab289fff2caeb0422e91b0"}}
+		expectedSignature := models.Signature{}
+		expectedSignature[testBufferHash] = models.StrongSignature{Hash: testBufferStrongHash, Head: 0, Tail: 15}
+		expectedSignature[16426995555] = models.StrongSignature{Hash: "2c9d26566889bcb66e96d74b97b14bc36cfd8c2949ab289fff2caeb0422e91b0", Head: 1, Tail: 16}
 		// Mock
 		initialiseBuffer = func(reader Reader, chunkSize int64) ([]byte, error) {
 			return testBuffer, nil
@@ -106,7 +130,7 @@ func TestGenerateSignature(t *testing.T) {
 		signature, err := GenerateSignature(reader, false)
 		// Verify
 		require.Equal(t, expectedError, err)
-		require.Equal(t, []models.Signature{}, signature)
+		require.Equal(t, models.Signature{}, signature)
 	})
 
 	t.Run("should return `emptySignature, error` when unable to read data from file to roll buffer", func(t *testing.T) {
@@ -126,7 +150,7 @@ func TestGenerateSignature(t *testing.T) {
 		signature, err := GenerateSignature(reader, false)
 		// Verify
 		require.Equal(t, expectedError, err)
-		require.Equal(t, []models.Signature{}, signature)
+		require.Equal(t, models.Signature{}, signature)
 	})
 }
 

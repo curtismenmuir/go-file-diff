@@ -10,7 +10,10 @@ type CMD struct {
 	DeltaFile     string `json:"deltaFile"`
 }
 
-type Signature struct {
-	Weak   int64  `json:"weak"`
-	Strong string `json:"strong"`
+type StrongSignature struct {
+	Hash string `json:"hash"`
+	Head int    `json:"head"`
+	Tail int    `json:"tail"`
 }
+
+type Signature map[int64]StrongSignature
