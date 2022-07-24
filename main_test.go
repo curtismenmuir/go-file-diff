@@ -212,8 +212,8 @@ func TestGetDelta(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) error {
-			return nil
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+			return nil, nil
 		}
 
 		// Run
@@ -294,6 +294,35 @@ func TestGetDelta(t *testing.T) {
 		require.Equal(t, expectedError, err)
 	})
 
+	t.Run("should return `UpdatedFileHasNoChangesError` when Delta generation finds no changes in Updated file", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		expectedError := errors.New(constants.UpdatedFileHasNoChangesError)
+		// Mock
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+			return nil, expectedError
+		}
+
+		// Run
+		err := getDelta(cmd, testSignature)
+		// Verify
+		require.Equal(t, expectedError, err)
+	})
+
 	t.Run("should return `UnableToGenerateDeltaError` when unable to generate Delta", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
@@ -313,8 +342,8 @@ func TestGetDelta(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) error {
-			return expectedError
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+			return nil, expectedError
 		}
 
 		// Run
@@ -449,8 +478,8 @@ func TestMain(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) error {
-			return nil
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+			return nil, nil
 		}
 
 		// Run
@@ -498,8 +527,8 @@ func TestMain(t *testing.T) {
 			return nil
 		}
 
-		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) error {
-			return nil
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+			return nil, nil
 		}
 
 		// Run

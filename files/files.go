@@ -212,7 +212,7 @@ func WriteSignatureToFile(signature models.Signature, fileName string) error {
 }
 
 // WriteToFile() will create a file in Outputs folder (based on provided fileName), and write the provided output to the file.
-// Note: this will be used for the patch process
+// Note: this will be used for the patch process.
 // Function will return `nil` when file has been created and written to successfully.
 // Function will return `UnableToCreateSignatureFileError` error when unable to create file.
 // Function will return `UnableToWriteToSignatureFileError` error when unable to write output to file after creation.

@@ -36,6 +36,6 @@
 
 ## :computer: CMD Commands
 
-- Signature Mode: `go run . -signatureMode -original=a.txt -signature=b.txt`
-- Delta Mode: `go run . -deltaMode -signature=Outputs/b.txt -updated=c.txt -delta=d.txt`
-- Signature + Delta Mode: `go run . -signatureMode -deltaMode -original=a.txt -signature=b.txt -updated=c.txt -delta=d.txt`
+- Signature Mode: `go run . -signatureMode -original=original.txt -signature=sig.txt -v`
+- Delta Mode: `go run . -deltaMode -signature=Outputs/sig.txt -updated=updated.txt -delta=delta.txt -v`
+- Signature + Delta Mode: `go run . -signatureMode -deltaMode -original=original.txt -signature=sig.txt -updated=updated.txt -delta=delta.txt -v`

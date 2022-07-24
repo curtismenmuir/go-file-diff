@@ -29,29 +29,192 @@ type Reader interface {
 	ReadByte() (byte, error)
 }
 
-// GenerateDelta() is a placeholder and returns `UnableToGenerateDelta` error.
-func GenerateDelta(reader Reader, signature models.Signature, verbose bool) error {
+// compareChecksums() will search for a Weak hash in provided Signature.
+// When match is found with Weak hash, function will generate Strong hash and compare against Signature item.
+// Function will return `true, item.Head, item.Tail` when successfully found block in Signature (EG When Weak & Strong hashes match Signature item).
+// Function will return `false, -1, -1` when unable to find block in Signature.
+func compareChecksums(signature models.Signature, buffer []byte, weakHash int64, verbose bool) (bool, int, int) {
+	// Search Signature for Weak hash
+	if item, exists := signature[weakHash]; exists {
+		// Generate Strong hash of buffer
+		strongHash := generateStrongHash(buffer, chunk)
+		logger(fmt.Sprintf("Strong hash = %s", strongHash), verbose)
+		// Verify if Strong hash also matches Signature item
+		if strongHash == item.Hash {
+			logger("Block found\n", verbose)
+			return true, item.Head, item.Tail
+		}
+	}
+
+	logger("Block missing\n", verbose)
+	return false, -1, -1
+}
+
+// GenerateDelta() will create a Delta changeset of how to update a provided file Signature to match an updated version of the file.
+// Delta will contain a list of reusable blocks from the original file, and where they should be added to match the Updated file.
+// Delta will also contain a list of new blocks which can be applied to the file to sync latest modifications.
+// Function will return `delta, nil` when generated Delta successfully.
+// Function will return `emptyDelta, UpdatedFileHasNoChangesError` when Updated file has no changes from Original.
+// Function will return `emptyDelta, error` when unable to populate buffer from file.
+// Function will return `emptyDelta, error` when unable to read data from file to roll buffer.
+func GenerateDelta(reader Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+	blockHead := 0
+	deltaHead := 0
+	deltaTail := int(chunk) - 1
+	delta := make(models.Delta)
+	initialBlockMatches := true
+	var block models.Block
 	// Create buffer based on chunk size
 	buffer, err := initialiseBuffer(reader, chunk)
 	if err != nil {
-		return err
+		return models.Delta{}, err
 	}
 
 	logger(fmt.Sprintf("Initial Buffer = %q", buffer[:]), verbose)
 	// Generate Weak hash of initial buffer
 	weakHash := generateWeakHash(buffer, chunk)
 	logger(fmt.Sprintf("Weak hash = %d", weakHash), verbose)
-	// Search Signature for a match
-	if item, ok := signature[weakHash]; ok {
-		logger(fmt.Sprintf("INITIAL HASH FOUND = %d:%d", item.Head, item.Tail), verbose)
-		// TODO Generate Strong hash of buffer
-		// TODO Compare against strong hash of matching signature item
-		// TODO If matches, then chunks are the same :) record match for Delta
+	// Search Signature for match on initial buffer
+	exists, head, tail := compareChecksums(signature, buffer, weakHash, verbose)
+	if exists {
+		// Create new matched block
+		block = models.Block{Head: head, Tail: tail, IsModified: !exists, Value: []byte{}}
+	} else {
+		// Create new missing block and record initial block does not match
+		block = models.Block{Head: deltaHead, Tail: deltaHead, IsModified: !exists, Value: []byte{buffer[0]}}
+		initialBlockMatches = false
 	}
 
-	// TODO Roll buffer, update hashes and compare against Signature
+	// Loop until EOF
+	for {
+		var initialByte, nextByte byte
+		var rollExists bool
+		var rollHead, rollTail int
+		// Roll buffer to next position
+		buffer, initialByte, nextByte, err = rollBuffer(reader, buffer)
+		if err != nil {
+			// Break loop when EOF returned
+			if err.Error() == constants.EndOfFileError {
+				// Add final block to Delta
+				delta[blockHead] = block
+				logger(fmt.Sprintf("Final Block added to Delta: %+v\n", block), verbose)
+				if block.IsModified {
+					logger(fmt.Sprintf("Final Block Value = %q\n", block.Value[:]), verbose)
+				}
 
-	return errors.New(constants.UnableToGenerateDeltaError)
+				break
+			}
+
+			// Handle errors
+			return models.Delta{}, err
+		}
+
+		logger(fmt.Sprintf("Rolled Buffer = %q", buffer[:]), verbose)
+		// Increment Delta position
+		deltaHead++
+		deltaTail++
+		// Roll Weak hash
+		weakHash = rollWeakHash(weakHash, initialByte, nextByte, chunk)
+		logger(fmt.Sprintf("Rolled hash = %d", weakHash), verbose)
+		// Search Signature for match on rolled buffer
+		rollExists, rollHead, rollTail = compareChecksums(signature, buffer, weakHash, verbose)
+		if rollExists {
+			// Match found in Signature, generate matched block
+			block, blockHead, initialBlockMatches = generateMatchedBlock(delta, block, exists, initialBlockMatches, blockHead, deltaHead, rollHead, rollTail, rollExists, verbose)
+		} else {
+			// No match found in Signature, generate missing block
+			block, blockHead = generateMissingBlock(delta, block, exists, initialBlockMatches, blockHead, nextByte, buffer, verbose)
+		}
+
+		// Record if match found for next iteration
+		exists = rollExists
+	}
+
+	logger(fmt.Sprintf("Delta: %+v\n", delta), verbose)
+
+	// Verify if Delta contains any modifications for Original file
+	if len(delta) == 1 && !delta[0].IsModified {
+		return models.Delta{}, errors.New(constants.UpdatedFileHasNoChangesError)
+	}
+
+	return delta, nil
+}
+
+// generateMatchedBlock() will generate a new matched block after adding previous missing block to Delta (only added to delta when applicable).
+// If previous roll was a match, then function will increase blocks tail position.
+// If previous roll was a missing block at the start of the file, then function will add provided block to Delta and return a new matched block.
+// Note: Missing initial block will be found at start of buffer (EG not rolled in).
+// If previous roll was a missing block but not found at beginning of file, then function will reduce block to remove any matched bytes, add block to Delta, and return a new matched block.
+// Note: Function reduces block as final roll will include 15 bytes of next match (EG rolling 16 byte buffer).
+// Function returns `block, blockHead, initialBlockMatches` upon completion.
+// Note: Function will update original instance of provided `Delta` as maps are reference types.
+func generateMatchedBlock(delta models.Delta, block models.Block, exists bool, initialBlockMatches bool, blockHead int, deltaHead int, rollHead int, rollTail int, rollExists bool, verbose bool) (models.Block, int, bool) {
+	// Verify if previous block matched
+	if exists {
+		// Increase blocks tail position when rolled buffer still matches
+		block.Tail++
+	} else {
+		// Verify if updating initial missing block
+		if !initialBlockMatches {
+			// If initial block is missing then block will contain only updated values
+			initialBlockMatches = true
+		} else {
+			// Reduce block to remove following matched characters
+			// EG last 15 characters of buffer will contain start of next matched block due to rolling function (EG buffer size == 16)
+			block.Tail = block.Tail + 1 - int(chunk)
+			missingValues := make([]byte, 0)
+			missingValues = append(missingValues, block.Value[0:block.Tail+1]...)
+			block.Value = missingValues
+		}
+
+		// Add missing block to Delta
+		delta[blockHead] = block
+		logger(fmt.Sprintf("Missing Block added to Delta: %+v", block), verbose)
+		logger(fmt.Sprintf("Missing Block Position: %d", blockHead), verbose)
+		logger(fmt.Sprintf("Missing Block Value = %q\n", block.Value[:]), verbose)
+		// Update position for next matching block
+		blockHead = deltaHead
+		// Create new matching block
+		block = models.Block{Head: rollHead, Tail: rollTail, IsModified: !rollExists, Value: []byte{}}
+
+	}
+
+	return block, blockHead, initialBlockMatches
+}
+
+// generateMissingBlock() will generate a new missing block after adding previous matched block to Delta (only added to delta when applicable).
+// If previous roll was a match, then function will add matched block to Delta, update block head to new position, and return a new missing block.
+// If previous roll was a missing block at the start of the file, the function will add byte from beginning of buffer to block Value & increment block Tail position.
+// Note: Use buffer first item as missing initial block will be found at start of buffer (EG not rolled in).
+// If previous roll was a missing block but not at beginning of file, the function will add next rolled byte to block Value & increment block Tail position.
+// Note: Use nextByte as missing block will be added to end of buffer (EG rolling 16 byte buffer).
+// Function returns `block, blockHead` upon completion.
+// Note: Function will update original instance of provided `Delta` as maps are reference types.
+func generateMissingBlock(delta models.Delta, block models.Block, exists bool, initialBlockMatches bool, blockHead int, nextByte byte, buffer []byte, verbose bool) (models.Block, int) {
+	// Verify if previous block matched
+	if exists {
+		// Add matching block to Delta
+		delta[blockHead] = block
+		logger(fmt.Sprintf("Matched Block added to Delta: %+v\n", block), verbose)
+		// Update position for next missing block
+		blockHead = blockHead + block.Tail - block.Head + 1
+		// Create new missing block
+		block = models.Block{Head: 0, Tail: 0, IsModified: exists, Value: []byte{nextByte}}
+	} else {
+		// Verify if updating initial missing block
+		if !initialBlockMatches {
+			// Use initial buffer position when first block does not match
+			block.Value = append(block.Value, buffer[0])
+		} else {
+			// Add new byte (EG rolled value)
+			block.Value = append(block.Value, nextByte)
+		}
+
+		// Increase blocks last position when rolled buffer still missing
+		block.Tail++
+	}
+
+	return block, blockHead
 }
 
 // GenerateSignature() will create a file Signature from a provided file reader.

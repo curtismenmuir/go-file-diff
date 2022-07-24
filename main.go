@@ -66,6 +66,7 @@ func getSignature(cmd models.CMD) (models.Signature, error) {
 // Function returns "not implemented" error as a placeholder for now (when no other errors thrown).
 // Function returns `UpdatedFileDoesNotExistError` when unable to find Updated file.
 // Function returns `UpdatedFileIsFolderError` when found a folder dir instead of Updated file.
+// Function returns `UpdatedFileHasNoChangesError` when Delta generation finds no changes in Updated file.
 // Function returns `UnableToGenerateDeltaError` when unable to generate Delta.
 func getDelta(cmd models.CMD, signature models.Signature) error {
 	// Create FileReader for Updated file
@@ -85,11 +86,19 @@ func getDelta(cmd models.CMD, signature models.Signature) error {
 	}
 
 	// Generate Delta
-	err = generateDelta(reader, signature, cmd.Verbose)
+	_, err = generateDelta(reader, signature, cmd.Verbose)
 	if err != nil {
+		// Return err when no changes detected in Updated file
+		if err.Error() == constants.UpdatedFileHasNoChangesError {
+			return err
+		}
+
+		// Return generic unable to generate Delta error
 		return errors.New(constants.UnableToGenerateDeltaError)
 	}
 
+	// TODO Write Delta to file
+	// TODO return `delta, nil`
 	return errors.New(constants.DeltaNotImplementedError)
 }
 

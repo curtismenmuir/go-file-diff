@@ -24,4 +24,5 @@ const (
 	UpdatedFileDoesNotExistError         string = "Error: Updated file does not exist"
 	UpdatedFileIsFolderError             string = "Error: Updated file provided is a folder dir"
 	UnableToGenerateDeltaError           string = "Error: Unable to generate Delta"
+	UpdatedFileHasNoChangesError         string = "Error: Updated file contains no changes from Original"
 )

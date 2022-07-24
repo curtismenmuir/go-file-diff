@@ -17,3 +17,12 @@ type StrongSignature struct {
 }
 
 type Signature map[int64]StrongSignature
+
+type Block struct {
+	Head       int    `json:"head"`
+	Tail       int    `json:"tail"`
+	IsModified bool   `json:"isModified"`
+	Value      []byte `json:"value"`
+}
+
+type Delta map[int]Block
