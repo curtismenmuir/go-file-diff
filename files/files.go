@@ -102,6 +102,42 @@ func doesExist(path string, isFile bool) (bool, error) {
 	return true, nil
 }
 
+// OpenDelta() will attempt to open a local file and decode a Delta from it.
+// Note: this will be used for the `patch` process.
+// Function will return `Delta, nil` when successfully retrieve Delta from file.
+// Function will return `emptyDelta, error` when unable to check existence of Delta file.
+// Function will return `emptyDelta, DeltaFileDoesNotExistError` when Delta file not found.
+// Function will return `emptyDelta, UnableToOpenDeltaFileError` when unable to open Delta file.
+// Function will return `emptyDelta, UnableToDecodeDeltaFromFileError` when unable to decode Delta from file (EG invalid file).
+func OpenDelta(fileName string, verbose bool) (models.Delta, error) {
+	delta := models.Delta{}
+	// Check if Delta file exists
+	exists, err := doesExist(fileName, true)
+	if err != nil {
+		return delta, err
+	} else if !exists {
+		return delta, errors.New(constants.DeltaFileDoesNotExistError)
+	}
+
+	// Open Delta file
+	file, err := open(fileName)
+	if err != nil {
+		return delta, errors.New(constants.UnableToOpenDeltaFileError)
+	}
+
+	defer file.Close()
+	// Create new file decoder
+	decoder := createNewDecoder(file)
+	// Decode file to Delta struct
+	err = decoder.Decode(&delta)
+	if err != nil {
+		return delta, errors.New(constants.UnableToDecodeDeltaFromFileError)
+	}
+
+	logger(fmt.Sprintf("File Delta: %+v\n", delta), verbose)
+	return delta, nil
+}
+
 // OpenFile() will attempt to open a local file and will return a file reader when successful.
 // Function will catch and return error when unable to access specified file.
 // Function will return `file does not exist` error when specified file does not exist.
@@ -212,7 +248,7 @@ func WriteStructToFile(model any, fileName string) error {
 }
 
 // WriteToFile() will create a file in Outputs folder (based on provided fileName), and write the provided output to the file.
-// Note: this will be used for the patch process.
+// Note: this will be used for the `patch` process.
 // Function will return `nil` when file has been created and written to successfully.
 // Function will return `UnableToCreateFileError` error when unable to create file.
 // Function will return `UnableToWriteToFileError` error when unable to write output to file after creation.

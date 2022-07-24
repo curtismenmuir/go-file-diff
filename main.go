@@ -68,43 +68,54 @@ func getSignature(cmd models.CMD) (models.Signature, error) {
 // getDelta() will attempt to generate a Delta changeset for syncing 2 files.
 // Delta changeset can be applied to the Original file to sync latest updates.
 // Delta generation will use a Signature of the original file to compare against Updated file.
-// Function returns "not implemented" error as a placeholder for now (when no other errors thrown).
-// Function returns `UpdatedFileDoesNotExistError` when unable to find Updated file.
-// Function returns `UpdatedFileIsFolderError` when found a folder dir instead of Updated file.
-// Function returns `UpdatedFileHasNoChangesError` when Delta generation finds no changes in Updated file.
-// Function returns `UnableToGenerateDeltaError` when unable to generate Delta.
-func getDelta(cmd models.CMD, signature models.Signature) error {
+// Function returns `delta, nil` when successful.
+// Function returns `emptyDelta, UpdatedFileDoesNotExistError` when unable to find Updated file.
+// Function returns `emptyDelta, UpdatedFileIsFolderError` when found a folder dir instead of Updated file.
+// Function returns `emptyDelta, UpdatedFileHasNoChangesError` when Delta generation finds no changes in Updated file.
+// Function returns `emptyDelta, UnableToGenerateDeltaError` when unable to generate Delta.
+// Function returns `emptyDelta, UnableToCreateDeltaFileError` when unable to create Delta file.
+// Function returns `emptyDelta, UnableToWriteToDeltaFileError` when unable to write to Delta file.
+func getDelta(cmd models.CMD, signature models.Signature) (models.Delta, error) {
 	// Create FileReader for Updated file
 	reader, err := openFile(cmd.UpdatedFile)
 	if err != nil {
 		// Replace generic `file not exist` error with specific Updated File error
 		if err.Error() == constants.FileDoesNotExistError {
-			return errors.New(constants.UpdatedFileDoesNotExistError)
+			return models.Delta{}, errors.New(constants.UpdatedFileDoesNotExistError)
 		}
 
 		// Replace generic `file is folder dir` error with specific Updated File error
 		if err.Error() == constants.SearchingForFileButFoundDirError {
-			return errors.New(constants.UpdatedFileIsFolderError)
+			return models.Delta{}, errors.New(constants.UpdatedFileIsFolderError)
 		}
 
-		return err
+		return models.Delta{}, err
 	}
 
 	// Generate Delta
-	_, err = generateDelta(reader, signature, cmd.Verbose)
+	delta, err := generateDelta(reader, signature, cmd.Verbose)
 	if err != nil {
 		// Return err when no changes detected in Updated file
 		if err.Error() == constants.UpdatedFileHasNoChangesError {
-			return err
+			return models.Delta{}, err
 		}
 
 		// Return generic unable to generate Delta error
-		return errors.New(constants.UnableToGenerateDeltaError)
+		return models.Delta{}, errors.New(constants.UnableToGenerateDeltaError)
 	}
 
-	// TODO Write Delta to file
-	// TODO return `delta, nil`
-	return errors.New(constants.DeltaNotImplementedError)
+	// Write Delta to file
+	err = writeStructToFile(delta, cmd.DeltaFile)
+	if err != nil {
+		// Replace generic `UnableToCreateFileError` error with specific Delta File error
+		if err.Error() == constants.UnableToCreateFileError {
+			return models.Delta{}, errors.New(constants.UnableToCreateDeltaFileError)
+		}
+
+		return models.Delta{}, errors.New(constants.UnableToWriteToDeltaFileError)
+	}
+
+	return delta, nil
 }
 
 func main() {
@@ -138,7 +149,7 @@ func main() {
 		}
 
 		// Generate Delta
-		err := getDelta(cmd, signature)
+		_, err = getDelta(cmd, signature)
 		if err != nil {
 			logger(err.Error(), true)
 			return

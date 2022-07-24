@@ -254,6 +254,129 @@ func TestDoesExists(t *testing.T) {
 	})
 }
 
+func TestOpenDelta(t *testing.T) {
+	t.Run("should return `delta, nil` when successfully read Delta from file", func(t *testing.T) {
+		// Setup
+		file := os.File{}
+		decoder := decoderMock{isError: false}
+		// Decoder mock doesn't update provided pointer, so use empty struct for now
+		// NOTE: Function will only return `err` as `nil` when successful
+		expectedDelta := models.Delta{}
+		var expectedError error = nil
+
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			fileInfo := fileInfoMock{isDir: false}
+			return fileInfo, nil
+		}
+
+		open = func(name string) (*os.File, error) {
+			return &file, nil
+		}
+
+		createNewDecoder = func(file *os.File) Decoder {
+			return decoder
+		}
+
+		// Run
+		delta, err := OpenDelta(fileName, false)
+		// Verify
+		require.Equal(t, expectedError, err)
+		require.Equal(t, expectedDelta, delta)
+	})
+
+	t.Run("should return `emptyDelta, error` when unable to check if Delta file exists", func(t *testing.T) {
+		// Setup
+		testError := errors.New(errorMessage)
+		expectedError := errors.New(constants.UnableToCheckFileFolderExistsError)
+		expectedDelta := models.Delta{}
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			return nil, testError
+		}
+
+		checkNotExists = func(err error) bool {
+			return false
+		}
+
+		// Run
+		delta, err := OpenDelta(fileName, false)
+		// Verify
+		require.Equal(t, expectedError, err)
+		require.Equal(t, expectedDelta, delta)
+	})
+
+	t.Run("should return `emptyDelta, DeltaFileDoesNotExistError` when Delta file does not exist", func(t *testing.T) {
+		// Setup
+		testError := errors.New(errorMessage)
+		expectedError := errors.New(constants.DeltaFileDoesNotExistError)
+		expectedDelta := models.Delta{}
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			return nil, testError
+		}
+
+		checkNotExists = func(err error) bool {
+			return true
+		}
+
+		// Run
+		delta, err := OpenDelta(fileName, false)
+		// Verify
+		require.Equal(t, expectedError, err)
+		require.Equal(t, expectedDelta, delta)
+	})
+
+	t.Run("should return `emptyDelta, UnableToOpenDeltaFileError` when unable to open file", func(t *testing.T) {
+		// Setup
+		testError := errors.New(errorMessage)
+		expectedError := errors.New(constants.UnableToOpenDeltaFileError)
+		expectedDelta := models.Delta{}
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			fileInfo := fileInfoMock{isDir: false}
+			return fileInfo, nil
+		}
+
+		open = func(name string) (*os.File, error) {
+			return nil, testError
+		}
+
+		// Run
+		delta, err := OpenDelta(fileName, false)
+		// Verify
+		require.Equal(t, expectedError, err)
+		require.Equal(t, expectedDelta, delta)
+	})
+
+	t.Run("should return `emptyDelta, UnableToDecodeDeltaFromFileError` when unable to decode Delta from file", func(t *testing.T) {
+		// Setup
+		file := os.File{}
+		decoder := decoderMock{isError: true}
+		expectedError := errors.New(constants.UnableToDecodeDeltaFromFileError)
+		expectedDelta := models.Delta{}
+		// Mock
+		getFileInfo = func(name string) (fs.FileInfo, error) {
+			fileInfo := fileInfoMock{isDir: false}
+			return fileInfo, nil
+		}
+
+		open = func(name string) (*os.File, error) {
+			return &file, nil
+		}
+
+		createNewDecoder = func(file *os.File) Decoder {
+			return decoder
+		}
+
+		// Run
+		delta, err := OpenDelta(fileName, false)
+		// Verify
+		require.Equal(t, expectedError, err)
+		require.Equal(t, expectedDelta, delta)
+	})
+}
+
 func TestOpenFile(t *testing.T) {
 	t.Run("should return file reader when successfully opened file", func(t *testing.T) {
 		// Setup

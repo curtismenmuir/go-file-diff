@@ -227,7 +227,7 @@ func TestGetSignature(t *testing.T) {
 }
 
 func TestGetDelta(t *testing.T) {
-	t.Run("should return `DeltaNotImplementedError` when successfully opened Updated file and generated Delta", func(t *testing.T) {
+	t.Run("should return `delta, nil` when successfully generated Delta and written to file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -239,7 +239,7 @@ func TestGetDelta(t *testing.T) {
 			DeltaFile:     file,
 		}
 
-		expectedError := errors.New(constants.DeltaNotImplementedError)
+		expectedDelta := models.Delta{}
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
 			file := os.File{}
@@ -247,16 +247,21 @@ func TestGetDelta(t *testing.T) {
 		}
 
 		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
-			return nil, nil
+			return expectedDelta, nil
+		}
+
+		writeStructToFile = func(model any, fileName string) error {
+			return nil
 		}
 
 		// Run
-		err := getDelta(cmd, testSignature)
+		delta, err := getDelta(cmd, testSignature)
 		// Verify
-		require.Equal(t, expectedError, err)
+		require.Equal(t, expectedDelta, delta)
+		require.Equal(t, nil, err)
 	})
 
-	t.Run("should return `UpdatedFileDoesNotExistError` when unable to find Updated file", func(t *testing.T) {
+	t.Run("should return `emptyDelta, UpdatedFileDoesNotExistError` when unable to find Updated file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -268,6 +273,7 @@ func TestGetDelta(t *testing.T) {
 			DeltaFile:     file,
 		}
 
+		expectedDelta := models.Delta{}
 		expectedError := errors.New(constants.UpdatedFileDoesNotExistError)
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
@@ -275,12 +281,13 @@ func TestGetDelta(t *testing.T) {
 		}
 
 		// Run
-		err := getDelta(cmd, testSignature)
+		delta, err := getDelta(cmd, testSignature)
 		// Verify
+		require.Equal(t, expectedDelta, delta)
 		require.Equal(t, expectedError, err)
 	})
 
-	t.Run("should return `UpdatedFileIsFolderError` when found Updated file but it is a folder dir", func(t *testing.T) {
+	t.Run("should return `emptyDelta, UpdatedFileIsFolderError` when found Updated file but it is a folder dir", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -292,6 +299,7 @@ func TestGetDelta(t *testing.T) {
 			DeltaFile:     file,
 		}
 
+		expectedDelta := models.Delta{}
 		expectedError := errors.New(constants.UpdatedFileIsFolderError)
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
@@ -299,12 +307,13 @@ func TestGetDelta(t *testing.T) {
 		}
 
 		// Run
-		err := getDelta(cmd, testSignature)
+		delta, err := getDelta(cmd, testSignature)
 		// Verify
+		require.Equal(t, expectedDelta, delta)
 		require.Equal(t, expectedError, err)
 	})
 
-	t.Run("should return `error` when unable to open Updated file", func(t *testing.T) {
+	t.Run("should return `emptyDelta, error` when unable to open Updated file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -316,6 +325,7 @@ func TestGetDelta(t *testing.T) {
 			DeltaFile:     file,
 		}
 
+		expectedDelta := models.Delta{}
 		expectedError := errors.New(errorMessage)
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
@@ -323,12 +333,13 @@ func TestGetDelta(t *testing.T) {
 		}
 
 		// Run
-		err := getDelta(cmd, testSignature)
+		delta, err := getDelta(cmd, testSignature)
 		// Verify
+		require.Equal(t, expectedDelta, delta)
 		require.Equal(t, expectedError, err)
 	})
 
-	t.Run("should return `UpdatedFileHasNoChangesError` when Delta generation finds no changes in Updated file", func(t *testing.T) {
+	t.Run("should return `emptyDelta, UpdatedFileHasNoChangesError` when Delta generation finds no changes in Updated file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -340,6 +351,7 @@ func TestGetDelta(t *testing.T) {
 			DeltaFile:     file,
 		}
 
+		expectedDelta := models.Delta{}
 		expectedError := errors.New(constants.UpdatedFileHasNoChangesError)
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
@@ -352,12 +364,13 @@ func TestGetDelta(t *testing.T) {
 		}
 
 		// Run
-		err := getDelta(cmd, testSignature)
+		delta, err := getDelta(cmd, testSignature)
 		// Verify
+		require.Equal(t, expectedDelta, delta)
 		require.Equal(t, expectedError, err)
 	})
 
-	t.Run("should return `UnableToGenerateDeltaError` when unable to generate Delta", func(t *testing.T) {
+	t.Run("should return `emptyDelta, UnableToGenerateDeltaError` when unable to generate Delta", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -369,6 +382,7 @@ func TestGetDelta(t *testing.T) {
 			DeltaFile:     file,
 		}
 
+		expectedDelta := models.Delta{}
 		expectedError := errors.New(constants.UnableToGenerateDeltaError)
 		// Mock
 		openFile = func(fileName string) (*bufio.Reader, error) {
@@ -381,8 +395,79 @@ func TestGetDelta(t *testing.T) {
 		}
 
 		// Run
-		err := getDelta(cmd, testSignature)
+		delta, err := getDelta(cmd, testSignature)
 		// Verify
+		require.Equal(t, expectedDelta, delta)
+		require.Equal(t, expectedError, err)
+	})
+
+	t.Run("should return `emptyDelta, UnableToCreateDeltaFileError` when unable to create Delta file", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		expectedDelta := models.Delta{}
+		expectedError := errors.New(constants.UnableToCreateDeltaFileError)
+		// Mock
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+			return expectedDelta, nil
+		}
+
+		writeStructToFile = func(model any, fileName string) error {
+			return errors.New(constants.UnableToCreateFileError)
+		}
+
+		// Run
+		delta, err := getDelta(cmd, testSignature)
+		// Verify
+		require.Equal(t, expectedDelta, delta)
+		require.Equal(t, expectedError, err)
+	})
+
+	t.Run("should return `emptyDelta, UnableToWriteToDeltaFileError` when unable to create Delta file", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		expectedDelta := models.Delta{}
+		expectedError := errors.New(constants.UnableToWriteToDeltaFileError)
+		// Mock
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+			return expectedDelta, nil
+		}
+
+		writeStructToFile = func(model any, fileName string) error {
+			return expectedError
+		}
+
+		// Run
+		delta, err := getDelta(cmd, testSignature)
+		// Verify
+		require.Equal(t, expectedDelta, delta)
 		require.Equal(t, expectedError, err)
 	})
 }
@@ -474,7 +559,101 @@ func TestMain(t *testing.T) {
 		require.Equal(t, expectedError, loggedMessage)
 	})
 
-	t.Run("should throw `DeltaNotImplementedError` when attempting to generate Delta after opening Signature from file", func(t *testing.T) {
+	t.Run("should not throw error when successfully generated Delta after opening Signature from file", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: false,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		logged := false
+		// Mock
+		logger = func(message string, verbose bool) {
+			logged = true
+		}
+
+		parseCMD = func() models.CMD {
+			return cmd
+		}
+
+		verifyCMD = func(cmd models.CMD) bool {
+			return true
+		}
+
+		openSignature = func(fileName string, verbose bool) (models.Signature, error) {
+			return testSignature, nil
+		}
+
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+			return nil, nil
+		}
+
+		writeStructToFile = func(model any, fileName string) error {
+			return nil
+		}
+
+		// Run
+		main()
+		// Verify
+		require.Equal(t, false, logged)
+	})
+
+	t.Run("should not throw error when successfully generated Delta after generating Signature", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		logged := false
+		// Mock
+		logger = func(message string, verbose bool) {
+			logged = true
+		}
+
+		parseCMD = func() models.CMD {
+			return cmd
+		}
+
+		verifyCMD = func(cmd models.CMD) bool {
+			return true
+		}
+
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		writeStructToFile = func(model any, fileName string) error {
+			return nil
+		}
+
+		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
+			return nil, nil
+		}
+
+		// Run
+		main()
+		// Verify
+		require.Equal(t, false, logged)
+	})
+
+	t.Run("should throw error when unable to generate Delta", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
 			Verbose:       false,
@@ -488,7 +667,7 @@ func TestMain(t *testing.T) {
 
 		logged := false
 		loggedMessage := ""
-		expectedError := constants.DeltaNotImplementedError
+		expectedError := constants.UnableToGenerateDeltaError
 		// Mock
 		logger = func(message string, verbose bool) {
 			logged = true
@@ -513,56 +692,7 @@ func TestMain(t *testing.T) {
 		}
 
 		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
-			return nil, nil
-		}
-
-		// Run
-		main()
-		// Verify
-		require.Equal(t, true, logged)
-		require.Equal(t, expectedError, loggedMessage)
-	})
-
-	t.Run("should throw `DeltaNotImplementedError` when attempting to generate Delta after generating Signature", func(t *testing.T) {
-		// Setup
-		cmd := models.CMD{
-			Verbose:       false,
-			SignatureMode: true,
-			DeltaMode:     true,
-			OriginalFile:  file,
-			SignatureFile: file,
-			UpdatedFile:   file,
-			DeltaFile:     file,
-		}
-
-		logged := false
-		loggedMessage := ""
-		expectedError := constants.DeltaNotImplementedError
-		// Mock
-		logger = func(message string, verbose bool) {
-			logged = true
-			loggedMessage = message
-		}
-
-		parseCMD = func() models.CMD {
-			return cmd
-		}
-
-		verifyCMD = func(cmd models.CMD) bool {
-			return true
-		}
-
-		openFile = func(fileName string) (*bufio.Reader, error) {
-			file := os.File{}
-			return bufio.NewReader(&file), nil
-		}
-
-		writeStructToFile = func(model any, fileName string) error {
-			return nil
-		}
-
-		generateDelta = func(reader sync.Reader, signature models.Signature, verbose bool) (models.Delta, error) {
-			return nil, nil
+			return nil, errors.New(expectedError)
 		}
 
 		// Run

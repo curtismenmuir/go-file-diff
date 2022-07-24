@@ -27,4 +27,9 @@ const (
 	UpdatedFileHasNoChangesError         string = "Error: Updated file contains no changes from Original"
 	UnableToCreateFileError              string = "Error: Unable to create file"
 	UnableToWriteToFileError             string = "Error: Unable to write to file"
+	UnableToCreateDeltaFileError         string = "Error: Unable to create Delta file"
+	UnableToWriteToDeltaFileError        string = "Error: Unable to write to Delta file"
+	DeltaFileDoesNotExistError           string = "Error: Delta file does not exist"
+	UnableToOpenDeltaFileError           string = "Error: Unable to open Delta file"
+	UnableToDecodeDeltaFromFileError     string = "Error: Unable to decode Delta from file"
 )
