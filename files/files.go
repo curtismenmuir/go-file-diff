@@ -180,12 +180,12 @@ func verifyOutputDirExists() error {
 	return nil
 }
 
-// WriteSignatureToFile() will create a Signature file in Outputs folder (based on provided fileName), and encode Signature before writing to file.
+// WriteStructToFile() will create a file in Outputs folder (based on provided fileName), and encode provided struct before writing to file.
 // Function will return `nil` when file has been created and written to successfully.
-// Function will return `UnableToCreateSignatureFileError` error when unable to create file.
-// Function will return `UnableToWriteToSignatureFileError` error when unable to write output to file after creation.
+// Function will return `UnableToCreateFileError` error when unable to create file.
+// Function will return `UnableToWriteToFileError` error when unable to write output to file after creation.
 // Function will return `error` when unable to verify if Output folder exists.
-func WriteSignatureToFile(signature models.Signature, fileName string) error {
+func WriteStructToFile(model any, fileName string) error {
 	// Verify `Outputs` folder exists
 	err := verifyOutputDirExists()
 	if err != nil {
@@ -195,27 +195,27 @@ func WriteSignatureToFile(signature models.Signature, fileName string) error {
 	// Create file
 	file, err := createFile(outputDir + fileName)
 	if err != nil {
-		return errors.New(constants.UnableToCreateSignatureFileError)
+		return errors.New(constants.UnableToCreateFileError)
 	}
 
 	defer file.Close()
 	// Create encoder
 	encoder := createNewEncoder(file)
-	// Encode Signature
-	err = encoder.Encode(signature)
+	// Encode struct
+	err = encoder.Encode(model)
 	if err != nil {
-		return errors.New(constants.UnableToWriteToSignatureFileError)
+		return errors.New(constants.UnableToWriteToFileError)
 	}
 
-	logger(fmt.Sprintf("Signature file created: %s%s\n", outputDir, fileName), true)
+	logger(fmt.Sprintf("%s created: %s%s\n", fileName, outputDir, fileName), true)
 	return nil
 }
 
 // WriteToFile() will create a file in Outputs folder (based on provided fileName), and write the provided output to the file.
 // Note: this will be used for the patch process.
 // Function will return `nil` when file has been created and written to successfully.
-// Function will return `UnableToCreateSignatureFileError` error when unable to create file.
-// Function will return `UnableToWriteToSignatureFileError` error when unable to write output to file after creation.
+// Function will return `UnableToCreateFileError` error when unable to create file.
+// Function will return `UnableToWriteToFileError` error when unable to write output to file after creation.
 // Function will return `error` when unable to verify if Output folder exists.
 func WriteToFile(fileName string, output []byte) error {
 	// Verify `Outputs` folder exists
@@ -227,7 +227,7 @@ func WriteToFile(fileName string, output []byte) error {
 	// Create file
 	file, err := createFile(outputDir + fileName)
 	if err != nil {
-		return errors.New(constants.UnableToCreateSignatureFileError)
+		return errors.New(constants.UnableToCreateFileError)
 	}
 
 	defer file.Close()
@@ -236,7 +236,7 @@ func WriteToFile(fileName string, output []byte) error {
 	for index := range output {
 		err := fileWriter.WriteByte(output[index])
 		if err != nil {
-			return errors.New(constants.UnableToWriteToSignatureFileError)
+			return errors.New(constants.UnableToWriteToFileError)
 		}
 	}
 

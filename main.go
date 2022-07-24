@@ -16,7 +16,7 @@ var (
 	parseCMD          = cmd.ParseCMD
 	verifyCMD         = cmd.VerifyCMD
 	openFile          = files.OpenFile
-	writeSigToFile    = files.WriteSignatureToFile
+	writeStructToFile = files.WriteStructToFile
 	generateSignature = sync.GenerateSignature
 	openSignature     = files.OpenSignature
 	generateDelta     = sync.GenerateDelta
@@ -52,8 +52,13 @@ func getSignature(cmd models.CMD) (models.Signature, error) {
 	}
 
 	// Write Signature to file
-	err = writeSigToFile(signature, cmd.SignatureFile)
+	err = writeStructToFile(signature, cmd.SignatureFile)
 	if err != nil {
+		// Replace generic `UnableToCreateFileError` error with specific Signature File error
+		if err.Error() == constants.UnableToCreateFileError {
+			return models.Signature{}, errors.New(constants.UnableToCreateSignatureFileError)
+		}
+
 		return models.Signature{}, errors.New(constants.UnableToWriteToSignatureFileError)
 	}
 

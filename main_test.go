@@ -41,7 +41,7 @@ func TestGetSignature(t *testing.T) {
 			return testSignature, nil
 		}
 
-		writeSigToFile = func(signature models.Signature, fileName string) error {
+		writeStructToFile = func(model any, fileName string) error {
 			return nil
 		}
 
@@ -157,6 +157,40 @@ func TestGetSignature(t *testing.T) {
 		require.Equal(t, models.Signature{}, signature)
 	})
 
+	t.Run("should return `EmptySignature, UnableToCreateSignatureFileError` when unable to create Signature file", func(t *testing.T) {
+		// Setup
+		cmd := models.CMD{
+			Verbose:       false,
+			SignatureMode: true,
+			DeltaMode:     true,
+			OriginalFile:  file,
+			SignatureFile: file,
+			UpdatedFile:   file,
+			DeltaFile:     file,
+		}
+
+		expectedError := errors.New(constants.UnableToCreateSignatureFileError)
+		// Mock
+		openFile = func(fileName string) (*bufio.Reader, error) {
+			file := os.File{}
+			return bufio.NewReader(&file), nil
+		}
+
+		generateSignature = func(reader sync.Reader, verbose bool) (models.Signature, error) {
+			return nil, nil
+		}
+
+		writeStructToFile = func(model any, fileName string) error {
+			return errors.New(constants.UnableToCreateFileError)
+		}
+
+		// Run
+		signature, err := getSignature(cmd)
+		// Verify
+		require.Equal(t, expectedError, err)
+		require.Equal(t, models.Signature{}, signature)
+	})
+
 	t.Run("should return `EmptySignature, UnableToWriteToSignatureFileError` when unable to write to Signature file", func(t *testing.T) {
 		// Setup
 		cmd := models.CMD{
@@ -180,8 +214,8 @@ func TestGetSignature(t *testing.T) {
 			return nil, nil
 		}
 
-		writeSigToFile = func(signature models.Signature, fileName string) error {
-			return errors.New(errorMessage)
+		writeStructToFile = func(model any, fileName string) error {
+			return expectedError
 		}
 
 		// Run
@@ -385,7 +419,7 @@ func TestMain(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		writeSigToFile = func(signature models.Signature, fileName string) error {
+		writeStructToFile = func(model any, fileName string) error {
 			return nil
 		}
 
@@ -429,8 +463,8 @@ func TestMain(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		writeSigToFile = func(signature models.Signature, fileName string) error {
-			return errors.New(errorMessage)
+		writeStructToFile = func(model any, fileName string) error {
+			return errors.New(expectedError)
 		}
 
 		// Run
@@ -523,7 +557,7 @@ func TestMain(t *testing.T) {
 			return bufio.NewReader(&file), nil
 		}
 
-		writeSigToFile = func(signature models.Signature, fileName string) error {
+		writeStructToFile = func(model any, fileName string) error {
 			return nil
 		}
 

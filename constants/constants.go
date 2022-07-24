@@ -25,4 +25,6 @@ const (
 	UpdatedFileIsFolderError             string = "Error: Updated file provided is a folder dir"
 	UnableToGenerateDeltaError           string = "Error: Unable to generate Delta"
 	UpdatedFileHasNoChangesError         string = "Error: Updated file contains no changes from Original"
+	UnableToCreateFileError              string = "Error: Unable to create file"
+	UnableToWriteToFileError             string = "Error: Unable to write to file"
 )
