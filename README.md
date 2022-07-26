@@ -41,7 +41,9 @@ This can be used with 2 files on the same machine, or used to update files acros
 - Performance testing
 - Setup CI pipeline
   - CircleCI free account?
-- Setup go channels for processing Signature Weak + Strong hashes concurrently?
+- Setup `go channels` for processing `Signature` Weak + Strong hashes concurrently?
+- Add default file names for `Signature` + `Delta` files?
+  - EG: `signature_yyyy_mm_dd_hh_mm_ss` + `delta_yyyy_mm_dd_hh_mm_ss`
 
 ## :arrow_up: How to Setup Project
 
