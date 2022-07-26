@@ -24,9 +24,11 @@ This can be used with 2 files on the same machine, or used to update files acros
 
 - `Machine 1` and `Machine 2` both have a copy of the same file
 - `Machine 1` has local updates to the file and these should be synced with `Machine 2`
-- `Machine 2` generates a `Signature` of their original copy of the file: `./go-file-diff -signatureMode -original=original.txt -signature=sig.txt`
+- `Machine 2` generates a `Signature` of their original copy of the file: 
+  - `./go-file-diff -signatureMode -original=original.txt -signature=sig.txt`
 - `Machine 2` sends `Signature` file to `Machine 1`
-- `Machine 1` generates a `Delta` of their local changes using provided `Signature` file: `./go-file-diff -deltaMode -signature=sig.txt -updated=updated.txt -delta=delta.txt`
+- `Machine 1` generates a `Delta` of their local changes using provided `Signature` file: 
+  - `./go-file-diff -deltaMode -signature=sig.txt -updated=updated.txt -delta=delta.txt`
 - `Machine 1` returns `Delta` file to `Machine 2`
 - `Machine 2` uses the `Delta` file to `Patch` their original version of the file to sync latest changes
     - NOTE: `Patch` functionality coming soon!
@@ -96,10 +98,9 @@ This can be used with 2 files on the same machine, or used to update files acros
 
 ## :rotating_light: Unit Tests
 
-- Run `go test ./...` from the root directory
-
-- For test coverage, run `go test ./... -coverprofile cp.out` from the root directory
-  - `go tool cover -html=cp.out` can then be run (root dir) to open detailed coverage breakdown in internet browser
+- Run Tests: `go test ./...`
+- Run Tests with Coverage: `go test ./... -coverprofile cp.out` 
+- View coverage report in Browser: `go tool cover -html=cp.out` 
 
 ## :cop: Linting
 - Run linter: `golangci-lint run` 
