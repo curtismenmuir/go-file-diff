@@ -3,18 +3,19 @@
 ## :collision: Important
 
 - This project has been built using Go version: `go1.18.3`
-- This project will diff an Original + Updated version of a file to produce a changeset on how to update the Original version to sync latest changes.
-- This project implements a 16-byte rolling hash algorithm for evaluating differences between the 2 files.
+- This project will diff an `Original` + `Updated` version of a file to produce a changeset on how to update the `Original` version to sync latest changes.
+- This project implements a `16-byte rolling hash algorithm` for evaluating differences between the 2 files.
   - Rolling hash algorithm is based on the `Rabin–Karp algorithm`.
+  - A stronger `SHA-256` hash of each 16-byte chunk will also be compared to reduce the impact of collisions with the rolling hash algorithm.
 - This project is based on the [rdiff](https://linux.die.net/man/1/rdiff) application.
-- Delta changeset will evaluate:
+- `Delta` changeset will evaluate:
   - Chunk changes and/or additions
   - Chunk removals
   - Additions between chunks with shifted original chunks
 
 ## :memo: Description
 
-This project can be used to compare 2 versions of a file, establish what has changed, and produce a `Delta` changeset of how the Original version can be patched to sync the latest changes.
+This project can be used to compare 2 versions of a file, establish what has changed, and produce a `Delta` changeset of how the `Original` version can be patched to sync the latest changes.
 - NOTE: `patch` functionality is out of scope for now, but will be added in the future!
 
 This can be used with 2 files on the same machine, or used to update files across different machines.
