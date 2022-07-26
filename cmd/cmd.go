@@ -15,7 +15,7 @@ var (
 	defineString = flag.String
 )
 
-// ParseCMD will read CMD flags and will return values in CMD struct
+// ParseCMD will read CMD flags and will return values in CMD struct.
 func ParseCMD() models.CMD {
 	// Define CMD flags
 	verbose := defineBool("v", false, "Enable extended logging")
@@ -44,7 +44,10 @@ func ParseCMD() models.CMD {
 	return cmd
 }
 
-// VerifyCMD will parse a CMD struct and ensure correct flags have been set based on mode selection
+// VerifyCMD will parse a CMD struct and ensure correct flags have been set based on mode selection.
+// Function returns `true` when correct CMD flags have been set.
+// Note: this does not include considering if files exist etc.
+// Function returns `false` when user has not provided the correct CMD flags.
 func VerifyCMD(cmd models.CMD) bool {
 	// Verify mode set
 	if !cmd.SignatureMode && !cmd.DeltaMode {
