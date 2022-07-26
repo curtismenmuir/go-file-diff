@@ -1,7 +1,7 @@
 package models
 
-// CMD type
-// This will contain the CMD Flags set by user
+// CMD type.
+// This will contain the CMD Flags set by user.
 type CMD struct {
 	Verbose       bool   `json:"verbose"`
 	SignatureMode bool   `json:"signatureMode"`
@@ -12,7 +12,7 @@ type CMD struct {
 	DeltaFile     string `json:"deltaFile"`
 }
 
-// StrongSignature type
+// StrongSignature type.
 // This will be used to contain a SHA-256 hash of the block of data, as well as the Head and Tail position of the bytes in the Original file (EG position of first + last characters).
 // EG: StrongSignature{Hash: "some-strong-hash", Head: 0, Tail: 15}.
 type StrongSignature struct {
