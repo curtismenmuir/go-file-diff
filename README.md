@@ -22,13 +22,13 @@ This can be used with 2 files on the same machine, or used to update files acros
 
 ### Example flow for distributed files
 
-- Machine 1 and Machine 2 both have a copy of the same file
-- Machine 1 has local updates to the file and these should be synced with Machine 2
-- Machine 2 generates a `Signature` of their original copy of the file: `./go-file-diff -signatureMode -original=original.txt -signature=sig.txt`
-- Machine 2 sends `Signature` file to Machine 1
-- Machine 1 generates a `Delta` of their local changes using provided `Signature` file: `./go-file-diff -deltaMode -signature=sig.txt -updated=updated.txt -delta=delta.txt`
-- Machine 1 returns `Delta` file to Machine 2
-- Machine 2 uses the `Delta` file to `Patch` their original version of the file to sync latest changes
+- `Machine 1` and `Machine 2` both have a copy of the same file
+- `Machine 1` has local updates to the file and these should be synced with `Machine 2`
+- `Machine 2` generates a `Signature` of their original copy of the file: `./go-file-diff -signatureMode -original=original.txt -signature=sig.txt`
+- `Machine 2` sends `Signature` file to `Machine 1`
+- `Machine 1` generates a `Delta` of their local changes using provided `Signature` file: `./go-file-diff -deltaMode -signature=sig.txt -updated=updated.txt -delta=delta.txt`
+- `Machine 1` returns `Delta` file to `Machine 2`
+- `Machine 2` uses the `Delta` file to `Patch` their original version of the file to sync latest changes
     - NOTE: `Patch` functionality coming soon!
 
 ## :soon: Future Improvements
@@ -57,6 +57,7 @@ This can be used with 2 files on the same machine, or used to update files acros
 
 **Step 2:** Run app: `go run . <CMD Args>`
 
+- EG `go run . -signatureMode -original=original.txt -signature=sig.txt -v`
 - NOTE: See `CMD Commands` section below for more details
 
 ## :rocket: How to Run Project for Release
@@ -68,6 +69,7 @@ This can be used with 2 files on the same machine, or used to update files acros
 **Step 3:** Run release app: `./go-file-diff <CMD Args>`
 
 - EG `./go-file-diff -signatureMode -original=original.txt -signature=sig.txt -v`
+- NOTE: See `CMD Commands` section below for more details
 
 ## :bulb: CMD Commands
 
